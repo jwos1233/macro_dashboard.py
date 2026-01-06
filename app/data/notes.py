@@ -221,6 +221,7 @@ Guidelines:
 - Focus: Prioritize what's most relevant to current positioning
 - Do NOT include section headers in the output - write as flowing prose with clear paragraph breaks
 - Do NOT use phrases like "I think" - be declarative
+- Do NOT use any markdown formatting (no **bold**, no *italics*, no bullet points) - write in plain prose paragraphs only
 - Start directly with the Quick Note content"""
 
     try:
