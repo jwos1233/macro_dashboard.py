@@ -215,10 +215,20 @@ def run_live_backtest() -> Optional[dict]:
 
         try:
             import yfinance as yf
+            import pandas as pd
             spy = yf.download('SPY', start=portfolio_value.index[0], end=portfolio_value.index[-1], progress=False)
             if len(spy) > 0:
-                spy_close = spy['Close']
-                if hasattr(spy_close, 'iloc'):
+                # Handle different yfinance return formats
+                if isinstance(spy.columns, pd.MultiIndex):
+                    spy_close = spy['Close']['SPY']
+                else:
+                    spy_close = spy['Close']
+
+                # Flatten if needed and ensure it's a Series
+                if hasattr(spy_close, 'squeeze'):
+                    spy_close = spy_close.squeeze()
+
+                if hasattr(spy_close, 'iloc') and len(spy_close) > 0:
                     spy_returns = spy_close.pct_change().dropna()
                     spy_total = ((spy_close.iloc[-1] / spy_close.iloc[0]) - 1) * 100
                     spy_annual = ((1 + spy_returns.mean()) ** 252 - 1) * 100
@@ -244,21 +254,25 @@ def run_live_backtest() -> Optional[dict]:
 
                     # Build SPY curve for chart overlay (normalized to same starting point)
                     spy_initial = float(spy_close.iloc[0])
+                    spy_dates = spy_close.index.tz_localize(None) if spy_close.index.tz else spy_close.index
                     for sample_date in sample_dates:
                         # Find closest date in SPY data
                         try:
-                            closest_idx = spy_close.index.get_indexer([sample_date], method='nearest')[0]
-                            spy_val = float(spy_close.iloc[closest_idx])
-                            # Normalize to portfolio initial capital for comparison
-                            spy_normalized = (spy_val / spy_initial) * INITIAL_CAPITAL
-                            spy_curve.append({
-                                'date': sample_date.strftime('%Y-%m-%d'),
-                                'value': round(spy_normalized, 2)
-                            })
-                        except Exception:
-                            pass
+                            sample_date_naive = sample_date.tz_localize(None) if hasattr(sample_date, 'tz_localize') and sample_date.tz else sample_date
+                            closest_idx = spy_dates.get_indexer([sample_date_naive], method='nearest')[0]
+                            if closest_idx >= 0:
+                                spy_val = float(spy_close.iloc[closest_idx])
+                                # Normalize to portfolio initial capital for comparison
+                                spy_normalized = (spy_val / spy_initial) * INITIAL_CAPITAL
+                                spy_curve.append({
+                                    'date': sample_date.strftime('%Y-%m-%d'),
+                                    'value': round(spy_normalized, 2)
+                                })
+                        except Exception as e:
+                            print(f"Error matching SPY date {sample_date}: {e}", flush=True)
+                    print(f"Built SPY curve with {len(spy_curve)} points", flush=True)
         except Exception as e:
-            print(f"Could not fetch SPY data: {e}")
+            print(f"Could not fetch SPY data: {e}", flush=True)
 
         # Build final results dict
         return {
