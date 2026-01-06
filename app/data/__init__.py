@@ -38,21 +38,21 @@ def run_live_backtest() -> Optional[dict]:
     _last_backtest_error = None
 
     try:
-        print("=" * 60)
-        print("ATTEMPTING LIVE BACKTEST")
-        print("=" * 60)
+        print("=" * 60, flush=True)
+        print("ATTEMPTING LIVE BACKTEST", flush=True)
+        print("=" * 60, flush=True)
 
-        print("Step 1: Importing QuadrantPortfolioBacktest...")
+        print("Step 1: Importing QuadrantPortfolioBacktest...", flush=True)
         from quad_portfolio_backtest import QuadrantPortfolioBacktest
-        print("  ✓ Import successful")
+        print("  ✓ Import successful", flush=True)
 
-        print("Step 2: Importing numpy...")
+        print("Step 2: Importing numpy...", flush=True)
         import numpy as np
-        print("  ✓ Numpy imported")
+        print("  ✓ Numpy imported", flush=True)
 
         from datetime import datetime, timedelta
 
-        print("Step 3: Running live backtest...")
+        print("Step 3: Setting up backtest parameters...", flush=True)
 
         # Setup backtest parameters
         INITIAL_CAPITAL = 50000
@@ -61,6 +61,7 @@ def run_live_backtest() -> Optional[dict]:
         start_date = end_date - timedelta(days=BACKTEST_YEARS * 365 + 100)
 
         # Run backtest
+        print("Step 4: Creating backtest instance...", flush=True)
         backtest = QuadrantPortfolioBacktest(
             start_date=start_date,
             end_date=end_date,
@@ -70,10 +71,16 @@ def run_live_backtest() -> Optional[dict]:
             atr_stop_loss=2.0,
             atr_period=14
         )
+        print("  ✓ Backtest instance created", flush=True)
 
+        print("Step 5: Running backtest (this may take 1-2 minutes)...", flush=True)
         results = backtest.run_backtest()
+        print(f"  ✓ Backtest complete! Total return: {results.get('total_return', 'N/A')}%", flush=True)
+
         portfolio_value = backtest.portfolio_value
         quad_history = backtest.quad_history
+
+        print("Step 6: Processing results...", flush=True)
 
         # Build equity curve data
         equity_curve = []
@@ -244,13 +251,16 @@ def run_live_backtest() -> Optional[dict]:
 
     except ImportError as e:
         _last_backtest_error = f"ImportError: {e}"
-        print(f"Backtest dependencies not available: {e}")
+        print(f"✗ Backtest dependencies not available: {e}", flush=True)
         return None
     except Exception as e:
         _last_backtest_error = f"{type(e).__name__}: {e}"
-        print(f"Error running backtest: {e}")
+        print(f"✗ Error running backtest: {e}", flush=True)
         import traceback
         traceback.print_exc()
+        import sys
+        sys.stdout.flush()
+        sys.stderr.flush()
         return None
 
 
