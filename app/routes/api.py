@@ -104,3 +104,50 @@ async def refresh_signals():
         "timestamp": signals['timestamp'].isoformat(),
         "regime": signals['current_regime'],
     }
+
+
+@router.get("/backtest/status")
+async def backtest_status():
+    """Get backtest data status and debug info"""
+    from app.data import load_backtest_results, _backtest_cache, _backtest_cache_time
+    import sys
+
+    # Check which dependencies are available
+    deps = {}
+    for mod in ['numpy', 'pandas', 'yfinance']:
+        try:
+            __import__(mod)
+            deps[mod] = True
+        except ImportError:
+            deps[mod] = False
+
+    # Load current backtest data
+    backtest = load_backtest_results()
+
+    return {
+        "data_source": backtest.get('data_source', 'unknown'),
+        "generated_at": backtest.get('generated_at'),
+        "summary": {
+            "total_return": backtest.get('summary', {}).get('total_return', 0),
+            "start_date": backtest.get('summary', {}).get('start_date', ''),
+            "end_date": backtest.get('summary', {}).get('end_date', ''),
+        },
+        "dependencies_available": deps,
+        "cache_time": _backtest_cache_time.isoformat() if _backtest_cache_time else None,
+        "python_version": sys.version,
+    }
+
+
+@router.post("/backtest/refresh")
+async def refresh_backtest():
+    """Force refresh of backtest data"""
+    from app.data import reload_backtest_results
+
+    backtest = reload_backtest_results()
+
+    return {
+        "status": "refreshed",
+        "data_source": backtest.get('data_source', 'unknown'),
+        "generated_at": backtest.get('generated_at'),
+        "total_return": backtest.get('summary', {}).get('total_return', 0),
+    }

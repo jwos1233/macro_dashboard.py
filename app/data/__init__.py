@@ -198,6 +198,7 @@ def run_live_backtest() -> Optional[dict]:
 
         # Build final results dict
         return {
+            'data_source': 'live_backtest',
             'summary': {
                 'initial_capital': INITIAL_CAPITAL,
                 'final_value': round(results['final_value'], 2),
@@ -259,6 +260,7 @@ def load_backtest_results() -> dict:
         try:
             with open(json_path, 'r') as f:
                 _backtest_cache = json.load(f)
+                _backtest_cache['data_source'] = 'json_file'
                 _backtest_cache_time = datetime.now()
                 print("Loaded backtest results from JSON file")
                 return _backtest_cache
@@ -273,6 +275,7 @@ def load_backtest_results() -> dict:
 def get_default_backtest_results() -> dict:
     """Return default/placeholder backtest results"""
     return {
+        "data_source": "defaults",
         "summary": {
             "initial_capital": 50000,
             "final_value": 50000,
