@@ -109,7 +109,7 @@ async def refresh_signals():
 @router.get("/backtest/status")
 async def backtest_status():
     """Get backtest data status and debug info"""
-    from app.data import load_backtest_results, _backtest_cache, _backtest_cache_time
+    from app.data import load_backtest_results, _backtest_cache, _backtest_cache_time, get_last_error
     import sys
 
     # Check which dependencies are available
@@ -135,13 +135,14 @@ async def backtest_status():
         "dependencies_available": deps,
         "cache_time": _backtest_cache_time.isoformat() if _backtest_cache_time else None,
         "python_version": sys.version,
+        "last_error": get_last_error(),
     }
 
 
 @router.post("/backtest/refresh")
 async def refresh_backtest():
     """Force refresh of backtest data"""
-    from app.data import reload_backtest_results
+    from app.data import reload_backtest_results, get_last_error
 
     backtest = reload_backtest_results()
 
@@ -150,4 +151,5 @@ async def refresh_backtest():
         "data_source": backtest.get('data_source', 'unknown'),
         "generated_at": backtest.get('generated_at'),
         "total_return": backtest.get('summary', {}).get('total_return', 0),
+        "last_error": get_last_error(),
     }
