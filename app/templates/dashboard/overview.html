@@ -71,40 +71,40 @@
 
         <!-- Quick Stats Cards -->
         <div class="lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <!-- Total Leverage -->
+            <!-- YTD Return -->
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Leverage</div>
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">YTD Return</div>
+                <div class="text-2xl font-bold {% if performance.ytd_return >= 0 %}text-success{% else %}text-warning{% endif %} mt-1">
+                    {% if performance.ytd_return >= 0 %}+{% endif %}{{ "%.1f"|format(performance.ytd_return) }}%
+                </div>
+                <div class="text-xs text-gray-400 mt-1">2025 performance</div>
+            </div>
+
+            <!-- Total Return -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Return</div>
+                <div class="text-2xl font-bold {% if performance.total_return >= 0 %}text-success{% else %}text-warning{% endif %} mt-1">
+                    {% if performance.total_return >= 0 %}+{% endif %}{{ "%.1f"|format(performance.total_return) }}%
+                </div>
+                <div class="text-xs text-gray-400 mt-1">Since inception</div>
+            </div>
+
+            <!-- Sharpe Ratio -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Sharpe Ratio</div>
                 <div class="text-2xl font-bold text-navy dark:text-white mt-1">
-                    {{ "%.2f"|format(signals.total_leverage) }}x
+                    {{ "%.2f"|format(performance.sharpe) }}
                 </div>
-                <div class="text-xs text-gray-400 mt-1">Portfolio exposure</div>
+                <div class="text-xs text-gray-400 mt-1">Risk-adjusted</div>
             </div>
 
-            <!-- Positions -->
+            <!-- Max Drawdown -->
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Positions</div>
-                <div class="text-2xl font-bold text-navy dark:text-white mt-1">
-                    {{ signals.target_weights|length }}
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Max Drawdown</div>
+                <div class="text-2xl font-bold text-warning mt-1">
+                    {{ "%.1f"|format(performance.max_drawdown) }}%
                 </div>
-                <div class="text-xs text-gray-400 mt-1">Active holdings</div>
-            </div>
-
-            <!-- Primary Quadrant -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Primary</div>
-                <div class="text-2xl font-bold text-success mt-1">
-                    {{ signals.top_quadrants[0] }}
-                </div>
-                <div class="text-xs text-gray-400 mt-1">{{ quad_descriptions[signals.top_quadrants[0]].split('(')[1].replace(')', '') }}</div>
-            </div>
-
-            <!-- Secondary Quadrant -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Secondary</div>
-                <div class="text-2xl font-bold text-gold mt-1">
-                    {{ signals.top_quadrants[1] }}
-                </div>
-                <div class="text-xs text-gray-400 mt-1">{{ quad_descriptions[signals.top_quadrants[1]].split('(')[1].replace(')', '') }}</div>
+                <div class="text-xs text-gray-400 mt-1">Worst decline</div>
             </div>
         </div>
     </div>

@@ -1,0 +1,78 @@
+{
+  "summary": {
+    "initial_capital": 50000,
+    "final_value": 125160.45,
+    "total_return": 150.32,
+    "annual_return": 28.14,
+    "sharpe": 1.21,
+    "max_drawdown": -22.76,
+    "volatility": 23.24,
+    "win_rate": 54.8,
+    "total_trades": 247,
+    "trading_costs": 1842.50,
+    "start_date": "2021-01-04",
+    "end_date": "2026-01-03",
+    "trading_days": 1258
+  },
+  "vs_benchmark": {
+    "spy_total_return": 78.4,
+    "spy_annual_return": 12.3,
+    "spy_sharpe": 0.72,
+    "spy_max_drawdown": -25.4,
+    "alpha": 15.84,
+    "beta": 0.68,
+    "correlation": 0.71,
+    "information_ratio": 0.92
+  },
+  "regime_performance": {
+    "Q1": {"return": 42.5, "days": 412, "avg_leverage": 1.48},
+    "Q2": {"return": 18.2, "days": 285, "avg_leverage": 1.42},
+    "Q3": {"return": 12.8, "days": 198, "avg_leverage": 1.35},
+    "Q4": {"return": -5.4, "days": 124, "avg_leverage": 1.22}
+  },
+  "annual_returns": [
+    {"year": 2021, "return": 34.2, "sharpe": 1.45, "max_dd": -12.4},
+    {"year": 2022, "return": -8.5, "sharpe": -0.32, "max_dd": -22.76},
+    {"year": 2023, "return": 28.7, "sharpe": 1.28, "max_dd": -14.2},
+    {"year": 2024, "return": 41.2, "sharpe": 1.89, "max_dd": -9.8},
+    {"year": 2025, "return": 22.4, "sharpe": 1.12, "max_dd": -11.5}
+  ],
+  "monthly_returns": [
+    {"month": "2025-12", "return": 3.8, "regime": "Q1+Q3"},
+    {"month": "2025-11", "return": 4.2, "regime": "Q1+Q3"},
+    {"month": "2025-10", "return": -1.8, "regime": "Q1+Q2"},
+    {"month": "2025-09", "return": 2.1, "regime": "Q1+Q2"},
+    {"month": "2025-08", "return": 3.5, "regime": "Q1+Q2"},
+    {"month": "2025-07", "return": 1.9, "regime": "Q2+Q3"},
+    {"month": "2025-06", "return": 2.8, "regime": "Q2+Q3"},
+    {"month": "2025-05", "return": -0.5, "regime": "Q1+Q2"},
+    {"month": "2025-04", "return": 4.1, "regime": "Q1+Q2"},
+    {"month": "2025-03", "return": 1.2, "regime": "Q1+Q3"},
+    {"month": "2025-02", "return": 2.4, "regime": "Q1+Q3"},
+    {"month": "2025-01", "return": -1.2, "regime": "Q1+Q4"}
+  ],
+  "regime_history": [
+    {"start": "2025-11-15", "end": null, "regime": "Q1+Q3", "return": 8.2},
+    {"start": "2025-08-01", "end": "2025-11-14", "regime": "Q1+Q2", "return": 5.8},
+    {"start": "2025-06-01", "end": "2025-07-31", "regime": "Q2+Q3", "return": 4.7},
+    {"start": "2025-03-15", "end": "2025-05-31", "regime": "Q1+Q2", "return": 3.6},
+    {"start": "2025-01-01", "end": "2025-03-14", "regime": "Q1+Q3", "return": 2.4},
+    {"start": "2024-10-01", "end": "2024-12-31", "regime": "Q1+Q2", "return": 12.1},
+    {"start": "2024-06-01", "end": "2024-09-30", "regime": "Q1+Q3", "return": 8.4},
+    {"start": "2024-01-01", "end": "2024-05-31", "regime": "Q1+Q2", "return": 18.2}
+  ],
+  "equity_curve": [
+    {"date": "2021-01-04", "value": 50000, "drawdown": 0},
+    {"date": "2021-06-30", "value": 58400, "drawdown": 0},
+    {"date": "2021-12-31", "value": 67100, "drawdown": -2.1},
+    {"date": "2022-06-30", "value": 54200, "drawdown": -19.2},
+    {"date": "2022-12-31", "value": 61400, "drawdown": -8.5},
+    {"date": "2023-06-30", "value": 72800, "drawdown": -3.2},
+    {"date": "2023-12-31", "value": 79020, "drawdown": 0},
+    {"date": "2024-06-30", "value": 98500, "drawdown": 0},
+    {"date": "2024-12-31", "value": 111600, "drawdown": -2.8},
+    {"date": "2025-06-30", "value": 118400, "drawdown": -4.1},
+    {"date": "2025-12-31", "value": 125160, "drawdown": 0}
+  ],
+  "generated_at": "2026-01-06T12:00:00Z"
+}
