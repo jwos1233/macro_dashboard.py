@@ -201,6 +201,62 @@ def run_live_backtest() -> Optional[dict]:
                 'max_dd': round(yearly_dd.get(year, 0), 2)
             })
 
+        # Build historical asset class allocation
+        asset_class_history = []
+        if quad_history is not None and len(quad_history) > 0:
+            try:
+                from config import QUAD_ALLOCATIONS
+
+                # Asset class categorization (same as dashboard.py)
+                equities = ['QQQ', 'ARKK', 'IWM', 'XLC', 'XLY', 'XLV', 'XLU', 'XLP', 'XLF', 'XLI', 'XLB', 'VTV', 'IWD']
+                bonds = ['TLT', 'LQD', 'IEF', 'VGLT', 'MUB', 'TIP', 'VTIP']
+                commodities = ['GLD', 'DBC', 'XLE', 'XOP', 'FCG', 'USO', 'GCC', 'DBA', 'REMX', 'URA', 'LIT', 'AA', 'PALL', 'VALT']
+                crypto = ['IBIT', 'ETHA']
+                real_assets = ['VNQ', 'PAVE']
+
+                def categorize_allocations(allocations):
+                    """Categorize allocations into asset classes"""
+                    breakdown = {'Equities': 0, 'Bonds': 0, 'Commodities': 0, 'Crypto': 0, 'Real Assets': 0}
+                    for ticker, weight in allocations.items():
+                        if ticker in equities:
+                            breakdown['Equities'] += weight
+                        elif ticker in bonds:
+                            breakdown['Bonds'] += weight
+                        elif ticker in commodities:
+                            breakdown['Commodities'] += weight
+                        elif ticker in crypto:
+                            breakdown['Crypto'] += weight
+                        elif ticker in real_assets:
+                            breakdown['Real Assets'] += weight
+                    return breakdown
+
+                # Sample at same rate as equity curve for consistency
+                for sample_date in sample_dates:
+                    if sample_date in quad_history.index:
+                        top1 = quad_history.loc[sample_date, 'Top1']
+                        top2 = quad_history.loc[sample_date, 'Top2']
+
+                        # Combine allocations from both active quadrants
+                        combined = {}
+                        for quad in [top1, top2]:
+                            if quad in QUAD_ALLOCATIONS:
+                                for ticker, weight in QUAD_ALLOCATIONS[quad].items():
+                                    combined[ticker] = combined.get(ticker, 0) + weight * 0.5
+
+                        breakdown = categorize_allocations(combined)
+                        total = sum(breakdown.values())
+                        if total > 0:
+                            # Normalize to percentages
+                            breakdown = {k: round(v / total * 100, 1) for k, v in breakdown.items()}
+
+                        asset_class_history.append({
+                            'date': sample_date.strftime('%Y-%m-%d'),
+                            **breakdown
+                        })
+                print(f"Built asset class history with {len(asset_class_history)} points", flush=True)
+            except Exception as e:
+                print(f"Could not build asset class history: {e}", flush=True)
+
         # Calculate benchmark comparison (try to get SPY)
         vs_benchmark = {
             'spy_total_return': 0,
@@ -299,6 +355,7 @@ def run_live_backtest() -> Optional[dict]:
             'regime_history': regime_history,
             'equity_curve': equity_curve,
             'spy_curve': spy_curve,
+            'asset_class_history': asset_class_history,
             'generated_at': datetime.now().isoformat()
         }
 
@@ -391,6 +448,7 @@ def get_default_backtest_results() -> dict:
         "regime_history": [],
         "equity_curve": [],
         "spy_curve": [],
+        "asset_class_history": [],
         "generated_at": None
     }
 
