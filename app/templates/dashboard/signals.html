@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Signals - Epoch Macro{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Trading Signals</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">
+                Current regime: <span class="font-medium text-navy dark:text-gold">{{ signals.current_regime }}</span>
+            </p>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="flex gap-2">
+            <select id="quadFilter" onchange="filterTable()"
+                    class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                <option value="all">All Quadrants</option>
+                <option value="Q1">Q1 - Goldilocks</option>
+                <option value="Q2">Q2 - Reflation</option>
+                <option value="Q3">Q3 - Stagflation</option>
+                <option value="Q4">Q4 - Deflation</option>
+            </select>
+
+            <select id="signalFilter" onchange="filterTable()"
+                    class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                <option value="all">All Signals</option>
+                <option value="long">Long Only</option>
+                <option value="neutral">Neutral</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Total Positions</div>
+            <div class="text-2xl font-bold text-navy dark:text-white">{{ all_positions|length }}</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Long Signals</div>
+            <div class="text-2xl font-bold text-success">{{ all_positions|length }}</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Total Exposure</div>
+            <div class="text-2xl font-bold text-navy dark:text-white">{{ "%.1f"|format(signals.total_leverage * 100) }}%</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Active Quadrants</div>
+            <div class="text-2xl font-bold text-gold">2</div>
+        </div>
+    </div>
+
+    <!-- Signals Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Position Signals</h2>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full" id="signalsTable">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th class="px-4 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" onclick="sortTable(0)">
+                            Rank
+                            <svg class="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                            </svg>
+                        </th>
+                        <th class="px-4 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" onclick="sortTable(1)">Ticker</th>
+                        <th class="px-4 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" onclick="sortTable(2)">Weight</th>
+                        <th class="px-4 py-3">Quadrant</th>
+                        <th class="px-4 py-3">Signal</th>
+                        <th class="px-4 py-3 hidden md:table-cell">Notional ($10k)</th>
+                        <th class="px-4 py-3 hidden lg:table-cell">EMA Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    {% for ticker, weight in all_positions %}
+                    {% set quads = ticker_quads.get(ticker, []) %}
+                    <tr class="data-row" data-quad="{{ quads|join(',') }}" data-signal="long">
+                        <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ loop.index }}</td>
+                        <td class="px-4 py-3">
+                            <span class="font-semibold text-gray-900 dark:text-white">{{ ticker }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-20 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                                    <div class="bg-navy dark:bg-gold h-2 rounded-full" style="width: {{ (weight / signals.total_leverage * 100)|round }}%"></div>
+                                </div>
+                                <span class="text-sm font-medium text-gray-900 dark:text-white">{{ (weight * 100)|round(2) }}%</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            {% for quad in quads %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                {% if quad == 'Q1' %}bg-success/10 text-success
+                                {% elif quad == 'Q2' %}bg-gold/10 text-gold-dark
+                                {% elif quad == 'Q3' %}bg-warning/10 text-warning
+                                {% else %}bg-navy/10 text-navy{% endif %}">
+                                {{ quad }}
+                            </span>
+                            {% endfor %}
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-success/10 text-success">
+                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                Long
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 hidden md:table-cell text-gray-600 dark:text-gray-300">
+                            ${{ "{:,.0f}".format(weight * 10000) }}
+                        </td>
+                        <td class="px-4 py-3 hidden lg:table-cell">
+                            <span class="inline-flex items-center text-xs text-success">
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                Above EMA
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Quadrant Breakdown -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for quad in ['Q1', 'Q2', 'Q3', 'Q4'] %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6
+                    {% if quad in signals.top_quadrants %}ring-2 ring-gold{% endif %}">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-gray-900 dark:text-white">
+                    {{ quad }} - {{ quad_descriptions[quad].split('(')[1].replace(')', '') }}
+                </h3>
+                {% if quad in signals.top_quadrants %}
+                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gold/10 text-gold-dark">
+                    Active
+                </span>
+                {% endif %}
+            </div>
+
+            <div class="text-3xl font-bold mb-2
+                {% if signals.quadrant_scores[quad] > 0 %}text-success{% else %}text-warning{% endif %}">
+                {{ "%.2f"|format(signals.quadrant_scores[quad]) }}%
+            </div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">
+                {{ quad_descriptions[quad] }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function filterTable() {
+        const quadFilter = document.getElementById('quadFilter').value;
+        const signalFilter = document.getElementById('signalFilter').value;
+        const rows = document.querySelectorAll('#signalsTable tbody tr');
+
+        rows.forEach(row => {
+            const rowQuad = row.dataset.quad;
+            const rowSignal = row.dataset.signal;
+
+            let showQuad = quadFilter === 'all' || rowQuad.includes(quadFilter);
+            let showSignal = signalFilter === 'all' || rowSignal === signalFilter;
+
+            row.style.display = (showQuad && showSignal) ? '' : 'none';
+        });
+    }
+
+    function sortTable(columnIndex) {
+        const table = document.getElementById('signalsTable');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+
+        rows.sort((a, b) => {
+            const aVal = a.cells[columnIndex].textContent.trim();
+            const bVal = b.cells[columnIndex].textContent.trim();
+
+            // Try numeric sort first
+            const aNum = parseFloat(aVal.replace(/[^0-9.-]/g, ''));
+            const bNum = parseFloat(bVal.replace(/[^0-9.-]/g, ''));
+
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+                return bNum - aNum;
+            }
+
+            return aVal.localeCompare(bVal);
+        });
+
+        rows.forEach(row => tbody.appendChild(row));
+    }
+</script>
+{% endblock %}
