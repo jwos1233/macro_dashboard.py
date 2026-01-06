@@ -275,6 +275,7 @@ async def signals_page(request: Request):
 async def allocation_page(request: Request):
     """Detailed allocation page"""
     signals = get_signals()
+    backtest = load_backtest_results()
 
     # Calculate asset class breakdown
     breakdown = calculate_asset_class_breakdown(signals['target_weights'])
@@ -304,6 +305,7 @@ async def allocation_page(request: Request):
         "positions": positions_with_info,
         "quad_descriptions": QUADRANT_DESCRIPTIONS,
         "quad_allocations": QUAD_ALLOCATIONS,
+        "asset_class_history": backtest.get('asset_class_history', []),
     })
 
 
