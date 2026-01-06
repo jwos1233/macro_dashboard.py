@@ -20,7 +20,13 @@ sys.path.insert(0, str(PROJECT_ROOT))
 # Cache for backtest results
 _backtest_cache: Optional[dict] = None
 _backtest_cache_time: Optional[datetime] = None
+_last_backtest_error: Optional[str] = None
 CACHE_DURATION_HOURS = 6  # Re-run backtest every 6 hours
+
+
+def get_last_error() -> Optional[str]:
+    """Get the last backtest error message"""
+    return _last_backtest_error
 
 
 def run_live_backtest() -> Optional[dict]:
@@ -28,12 +34,25 @@ def run_live_backtest() -> Optional[dict]:
     Run the actual backtest and return formatted results.
     Returns None if backtest fails or dependencies unavailable.
     """
-    try:
-        from quad_portfolio_backtest import QuadrantPortfolioBacktest
-        from datetime import datetime, timedelta
-        import numpy as np
+    global _last_backtest_error
+    _last_backtest_error = None
 
-        print("Running live backtest...")
+    try:
+        print("=" * 60)
+        print("ATTEMPTING LIVE BACKTEST")
+        print("=" * 60)
+
+        print("Step 1: Importing QuadrantPortfolioBacktest...")
+        from quad_portfolio_backtest import QuadrantPortfolioBacktest
+        print("  ✓ Import successful")
+
+        print("Step 2: Importing numpy...")
+        import numpy as np
+        print("  ✓ Numpy imported")
+
+        from datetime import datetime, timedelta
+
+        print("Step 3: Running live backtest...")
 
         # Setup backtest parameters
         INITIAL_CAPITAL = 50000
@@ -224,9 +243,11 @@ def run_live_backtest() -> Optional[dict]:
         }
 
     except ImportError as e:
+        _last_backtest_error = f"ImportError: {e}"
         print(f"Backtest dependencies not available: {e}")
         return None
     except Exception as e:
+        _last_backtest_error = f"{type(e).__name__}: {e}"
         print(f"Error running backtest: {e}")
         import traceback
         traceback.print_exc()
