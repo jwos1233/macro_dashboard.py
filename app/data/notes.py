@@ -72,6 +72,56 @@ def has_todays_note() -> bool:
     return get_todays_note() is not None
 
 
+def categorize_holdings(weights: dict) -> dict:
+    """Map ticker holdings to categories and calculate aggregate exposures"""
+    categories = {
+        'Growth Equities': ['QQQ', 'ARKK', 'IWM', 'XLC', 'XLY'],
+        'Cyclical Equities': ['XLF', 'XLI', 'XLB', 'VTV', 'IWD'],
+        'Defensive Equities': ['XLU', 'XLP', 'XLV'],
+        'Energy': ['XLE', 'XOP', 'FCG', 'USO'],
+        'Commodities (Broad)': ['DBC', 'GCC'],
+        'Commodities (Metals)': ['LIT', 'AA', 'PALL', 'REMX', 'GLD'],
+        'Commodities (Ags)': ['DBA'],
+        'Commodities (Uranium)': ['URA'],
+        'Duration (Long)': ['TLT', 'VGLT', 'IEF'],
+        'Duration (Short/TIPS)': ['TIP', 'VTIP', 'VALT'],
+        'Credit (IG)': ['LQD', 'MUB'],
+        'Real Assets': ['VNQ', 'PAVE'],
+        'Crypto': ['IBIT', 'ETHA']
+    }
+
+    # Reverse lookup
+    ticker_to_category = {}
+    for cat, tickers in categories.items():
+        for ticker in tickers:
+            ticker_to_category[ticker] = cat
+
+    # Aggregate by category
+    category_weights = {}
+    for ticker, weight in weights.items():
+        cat = ticker_to_category.get(ticker, 'Other')
+        category_weights[cat] = category_weights.get(cat, 0) + weight
+
+    return category_weights
+
+
+def format_holdings_table(weights: dict) -> str:
+    """Format top holdings as a table string"""
+    sorted_holdings = sorted(weights.items(), key=lambda x: x[1], reverse=True)[:10]
+    lines = ["| Ticker | Weight |", "|--------|--------|"]
+    for ticker, weight in sorted_holdings:
+        lines.append(f"| {ticker} | {weight*100:.1f}% |")
+    return "\n".join(lines)
+
+
+def format_category_summary(weights: dict) -> str:
+    """Format category exposure summary"""
+    cat_weights = categorize_holdings(weights)
+    sorted_cats = sorted(cat_weights.items(), key=lambda x: x[1], reverse=True)
+    parts = [f"{w*100:.0f}% {cat}" for cat, w in sorted_cats if w > 0.01]
+    return ", ".join(parts)
+
+
 def generate_note_content(signals: dict) -> Optional[Dict]:
     """
     Generate daily note content using Anthropic API
@@ -94,40 +144,85 @@ def generate_note_content(signals: dict) -> Optional[Dict]:
     weights = signals.get('target_weights', {})
     leverage = signals.get('total_leverage', 1.0)
 
-    # Get top positions
-    top_positions = sorted(weights.items(), key=lambda x: x[1], reverse=True)[:5]
-    positions_str = ", ".join([f"{t} ({w*100:.1f}%)" for t, w in top_positions])
+    # Format data for prompt
+    today_str = date.today().strftime("%B %d, %Y")
+    holdings_table = format_holdings_table(weights)
+    category_summary = format_category_summary(weights)
+    scores_str = ", ".join([f"{q}: {s:.1f}%" for q, s in sorted(scores.items(), key=lambda x: x[1], reverse=True)])
 
-    # Format scores
-    scores_str = ", ".join([f"{q}: {s:.1f}%" for q, s in scores.items()])
+    prompt = f"""Daily Trading Morning Note Generator with Portfolio Context
 
-    prompt = f"""You are a macro strategist writing a daily market note for a quantitative macro rotation strategy called "Epoch Macro".
+Create a concise morning note for traders based on the systematic portfolio positioning analysis below. Focus on actionable themes and how current model positioning relates to broader market dynamics.
 
-Current Market Regime: {regime}
-Quadrant Momentum Scores: {scores_str}
-Top 5 Positions: {positions_str}
-Total Portfolio Leverage: {leverage:.2f}x
+Today's Date: {today_str}
+
+Portfolio Context:
+- Dominant Quadrant: {top_quads[0]}
+- Secondary Quadrant: {top_quads[1]}
+- Quadrant Momentum Scores: {scores_str}
+- Net Leverage: {leverage:.2f}x
+
+Current Portfolio Holdings (Top 10):
+{holdings_table}
+
+Category Exposure Summary: {category_summary}
+
+Category Mapping Reference:
+- Growth Equities: QQQ, ARKK, IWM, XLC, XLY
+- Cyclical Equities: XLF, XLI, XLB, VTV, IWD
+- Defensive Equities: XLU, XLP, XLV
+- Energy: XLE, XOP, FCG, USO
+- Commodities (Broad): DBC, GCC
+- Commodities (Metals): LIT, AA, PALL, REMX, GLD
+- Commodities (Ags): DBA
+- Commodities (Uranium): URA
+- Duration (Long): TLT, VGLT, IEF
+- Duration (Short/TIPS): TIP, VTIP, VALT
+- Credit (IG): LQD, MUB
+- Real Assets: VNQ, PAVE
+- Crypto: IBIT, ETHA
 
 Quadrant Definitions:
-- Q1 (Goldilocks): Growth accelerating, inflation falling - favor growth/tech
-- Q2 (Reflation): Growth accelerating, inflation rising - favor commodities/energy
-- Q3 (Stagflation): Growth slowing, inflation rising - favor real assets/gold
-- Q4 (Deflation): Growth slowing, inflation falling - favor bonds/defensives
+- Q1 (Goldilocks): Growth↑, Inflation↓ – favor growth assets, duration, crypto
+- Q2 (Reflation): Growth↑, Inflation↑ – favor commodities, cyclicals, real assets, energy
+- Q3 (Stagflation): Growth↓, Inflation↑ – favor energy, commodities, TIPS, defensives, crypto
+- Q4 (Deflation): Growth↓, Inflation↓ – favor long duration, IG credit, defensives, USD
 
-Write a concise daily macro note (2-3 paragraphs) that:
-1. Summarizes the current regime and what's driving it
-2. Explains the portfolio positioning and key trades
-3. Highlights any notable changes or risks to monitor
+Please generate the following sections:
 
-Keep the tone professional and analytical. Be specific about the data driving decisions.
-Do NOT use phrases like "I think" or "In my opinion" - be declarative.
-Do NOT include a title - just the note content.
-Keep it under 200 words."""
+**Quick Note (Marketing Summary)**
+A short-form summary (100-150 words max) containing:
+- Opening Theme (2-3 sentences): The single most important market narrative for the current regime
+- Portfolio Snapshot (1-2 sentences): Aggregate category exposures + net leverage
+- Top 3 Holdings Overview (1 bullet each): For three largest positions, provide ticker, thesis, and key catalyst/risk
+
+**Regime Context**
+- Current regime characteristics and what this dual-quad environment typically favors
+- Cross-quad dynamics: tensions or synergies between dominant and secondary positioning
+
+**Position Analysis**
+For the top 5 holdings, write a brief paragraph covering:
+1. The macro thesis supporting the position
+2. Whether the position aligns with the current quadrant regime
+3. Key catalyst or risk to monitor
+
+**Risk Considerations**
+- Catalysts that could challenge current quadrant regime
+- What would trigger rotation to a different quad
+- Specific risks to concentrated positions
+
+Guidelines:
+- Length: 500-700 words total
+- Tone: Professional, direct, written for experienced traders; newsletter style (refer to "the portfolio" not "your portfolio")
+- Focus: Prioritize what's most relevant to current positioning
+- Do NOT include section headers in the output - write as flowing prose with clear paragraph breaks
+- Do NOT use phrases like "I think" - be declarative
+- Start directly with the Quick Note content"""
 
     try:
         message = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=500,
+            max_tokens=1500,
             messages=[
                 {"role": "user", "content": prompt}
             ]
