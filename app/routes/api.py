@@ -200,3 +200,29 @@ async def get_notes():
         "notes": notes,
         "count": len(notes)
     }
+
+
+@router.delete("/notes/today")
+async def delete_todays_note():
+    """Delete today's note so it can be regenerated"""
+    from app.data.notes import load_notes, save_notes
+    from datetime import date
+
+    today = date.today().isoformat()
+    notes = load_notes()
+
+    # Filter out today's note
+    original_count = len(notes)
+    notes = [n for n in notes if n.get('date') != today]
+
+    if len(notes) < original_count:
+        save_notes(notes)
+        return {
+            "status": "deleted",
+            "message": f"Deleted note for {today}"
+        }
+    else:
+        return {
+            "status": "not_found",
+            "message": f"No note found for {today}"
+        }
