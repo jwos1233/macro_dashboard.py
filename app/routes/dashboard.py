@@ -27,7 +27,7 @@ router = APIRouter()
 templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
 
 # Cache settings
-SIGNAL_CACHE_HOURS = 4  # Cache signals for 4 hours (daily data doesn't change often)
+SIGNAL_CACHE_HOURS = 24  # Cache signals for 24 hours (refreshes once per day)
 SIGNALS_CACHE_FILE = Path(__file__).parent.parent / "data" / "signals_cache.json"
 
 # In-memory cache for signals
