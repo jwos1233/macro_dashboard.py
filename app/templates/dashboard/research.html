@@ -103,35 +103,22 @@
             <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
 
             <div class="space-y-6">
-                <!-- Current -->
+                {% for period in regime_history[:8] %}
                 <div class="relative flex items-start gap-4 pl-10">
-                    <div class="absolute left-2 w-4 h-4 rounded-full bg-gold border-2 border-white dark:border-gray-800"></div>
+                    <div class="absolute left-2 w-4 h-4 rounded-full {% if loop.first %}bg-gold{% else %}bg-gray-400{% endif %} border-2 border-white dark:border-gray-800"></div>
                     <div>
-                        <div class="text-sm text-gray-500 dark:text-gray-400">Jan 2026 - Present</div>
-                        <div class="font-semibold text-gray-900 dark:text-white">Q1 + Q3</div>
-                        <div class="text-sm text-gray-600 dark:text-gray-300">Goldilocks with Stagflation hedge</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                            {{ period.start }} - {% if period.end %}{{ period.end }}{% else %}Present{% endif %}
+                        </div>
+                        <div class="font-semibold text-gray-900 dark:text-white">{{ period.regime }}</div>
+                        <div class="text-sm {% if period.return >= 0 %}text-success{% else %}text-warning{% endif %}">
+                            {% if period.return >= 0 %}+{% endif %}{{ "%.1f"|format(period.return) }}% return
+                        </div>
                     </div>
                 </div>
-
-                <!-- Previous -->
-                <div class="relative flex items-start gap-4 pl-10">
-                    <div class="absolute left-2 w-4 h-4 rounded-full bg-gray-400 border-2 border-white dark:border-gray-800"></div>
-                    <div>
-                        <div class="text-sm text-gray-500 dark:text-gray-400">Nov 2025 - Jan 2026</div>
-                        <div class="font-semibold text-gray-900 dark:text-white">Q1 + Q2</div>
-                        <div class="text-sm text-gray-600 dark:text-gray-300">Goldilocks with Reflation</div>
-                    </div>
-                </div>
-
-                <!-- Older -->
-                <div class="relative flex items-start gap-4 pl-10">
-                    <div class="absolute left-2 w-4 h-4 rounded-full bg-gray-400 border-2 border-white dark:border-gray-800"></div>
-                    <div>
-                        <div class="text-sm text-gray-500 dark:text-gray-400">Sep 2025 - Nov 2025</div>
-                        <div class="font-semibold text-gray-900 dark:text-white">Q2 + Q3</div>
-                        <div class="text-sm text-gray-600 dark:text-gray-300">Reflation with Stagflation</div>
-                    </div>
-                </div>
+                {% else %}
+                <div class="text-gray-500 dark:text-gray-400 text-sm">No regime history available</div>
+                {% endfor %}
             </div>
         </div>
     </div>

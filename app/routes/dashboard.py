@@ -20,6 +20,7 @@ except ImportError:
     print("Warning: SignalGenerator not available, using mock data")
 
 from config import QUAD_ALLOCATIONS, QUADRANT_DESCRIPTIONS
+from app.data import load_backtest_results
 
 router = APIRouter()
 templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
@@ -132,6 +133,7 @@ def calculate_asset_class_breakdown(weights: dict) -> dict:
 async def overview(request: Request):
     """Main dashboard overview page"""
     signals = get_signals()
+    backtest = load_backtest_results()
 
     # Calculate asset class breakdown
     breakdown = calculate_asset_class_breakdown(signals['target_weights'])
@@ -143,12 +145,25 @@ async def overview(request: Request):
         reverse=True
     )[:10]
 
+    # Get performance summary from backtest
+    summary = backtest.get('summary', {})
+    monthly = backtest.get('monthly_returns', [])
+    ytd_return = sum(m.get('return', 0) for m in monthly if m.get('month', '').startswith('2025'))
+
+    performance_summary = {
+        'total_return': summary.get('total_return', 0),
+        'ytd_return': ytd_return,
+        'sharpe': summary.get('sharpe', 0),
+        'max_drawdown': summary.get('max_drawdown', 0),
+    }
+
     return templates.TemplateResponse("dashboard/overview.html", {
         "request": request,
         "page": "overview",
         "signals": signals,
         "breakdown": breakdown,
         "top_positions": top_positions,
+        "performance": performance_summary,
         "quad_descriptions": QUADRANT_DESCRIPTIONS,
     })
 
@@ -223,8 +238,9 @@ async def allocation_page(request: Request):
 async def research_page(request: Request):
     """Research/daily notes page"""
     signals = get_signals()
+    backtest = load_backtest_results()
 
-    # Mock research notes for now
+    # Mock research notes for now (TODO: integrate with AI generation)
     research_notes = [
         {
             'date': '2026-01-06',
@@ -246,11 +262,15 @@ async def research_page(request: Request):
         },
     ]
 
+    # Get regime history from backtest
+    regime_history = backtest.get('regime_history', [])
+
     return templates.TemplateResponse("dashboard/research.html", {
         "request": request,
         "page": "research",
         "signals": signals,
         "research_notes": research_notes,
+        "regime_history": regime_history,
         "quad_descriptions": QUADRANT_DESCRIPTIONS,
     })
 
@@ -259,27 +279,55 @@ async def research_page(request: Request):
 async def performance_page(request: Request):
     """Performance/track record page"""
     signals = get_signals()
+    backtest = load_backtest_results()
 
-    # Mock performance data
+    # Get summary stats from backtest
+    summary = backtest.get('summary', {})
+    benchmark = backtest.get('vs_benchmark', {})
+
+    # Calculate YTD and MTD from monthly returns
+    monthly = backtest.get('monthly_returns', [])
+    ytd_return = sum(m.get('return', 0) for m in monthly if m.get('month', '').startswith('2025'))
+    mtd_return = monthly[0].get('return', 0) if monthly else 0
+
     performance = {
-        'ytd_return': 12.5,
-        'mtd_return': 3.2,
-        'total_return': 45.8,
-        'sharpe': 1.42,
-        'max_drawdown': -15.3,
-        'win_rate': 58.2,
-        'avg_trade': 2.1,
+        'ytd_return': ytd_return,
+        'mtd_return': mtd_return,
+        'total_return': summary.get('total_return', 0),
+        'sharpe': summary.get('sharpe', 0),
+        'max_drawdown': summary.get('max_drawdown', 0),
+        'win_rate': summary.get('win_rate', 0),
+        'volatility': summary.get('volatility', 0),
+        'annual_return': summary.get('annual_return', 0),
+        'total_trades': summary.get('total_trades', 0),
+        'trading_costs': summary.get('trading_costs', 0),
+        'initial_capital': summary.get('initial_capital', 50000),
+        'final_value': summary.get('final_value', 50000),
+        'start_date': summary.get('start_date', ''),
+        'end_date': summary.get('end_date', ''),
     }
 
-    # Mock monthly returns
-    monthly_returns = [
-        {'month': 'Jan 2026', 'return': 3.2},
-        {'month': 'Dec 2025', 'return': 4.1},
-        {'month': 'Nov 2025', 'return': 2.8},
-        {'month': 'Oct 2025', 'return': -1.5},
-        {'month': 'Sep 2025', 'return': 1.9},
-        {'month': 'Aug 2025', 'return': 3.4},
-    ]
+    # Format monthly returns for display
+    monthly_returns = []
+    for m in monthly[:12]:  # Last 12 months
+        month_str = m.get('month', '')
+        # Convert YYYY-MM to readable format
+        if month_str:
+            try:
+                year, month = month_str.split('-')
+                month_names = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                formatted = f"{month_names[int(month)]} {year}"
+            except:
+                formatted = month_str
+        else:
+            formatted = 'Unknown'
+
+        monthly_returns.append({
+            'month': formatted,
+            'return': m.get('return', 0),
+            'regime': m.get('regime', 'N/A')
+        })
 
     return templates.TemplateResponse("dashboard/performance.html", {
         "request": request,
@@ -287,5 +335,9 @@ async def performance_page(request: Request):
         "signals": signals,
         "performance": performance,
         "monthly_returns": monthly_returns,
+        "annual_returns": backtest.get('annual_returns', []),
+        "regime_performance": backtest.get('regime_performance', {}),
+        "vs_benchmark": benchmark,
+        "equity_curve": backtest.get('equity_curve', []),
         "quad_descriptions": QUADRANT_DESCRIPTIONS,
     })
