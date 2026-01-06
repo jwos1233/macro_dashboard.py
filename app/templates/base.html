@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Epoch Macro{% endblock %}</title>
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Custom Tailwind Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            DEFAULT: '#0F4C75',
+                            dark: '#0a3654',
+                            light: '#1a6a9e',
+                        },
+                        gold: {
+                            DEFAULT: '#D4A857',
+                            dark: '#b8923d',
+                            light: '#e4c078',
+                        },
+                        success: '#059669',
+                        warning: '#B91C1C',
+                        gray: {
+                            cool: '#4B5563',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom styles */
+        .regime-indicator {
+            position: relative;
+        }
+
+        .regime-quadrant {
+            transition: all 0.3s ease;
+        }
+
+        .regime-quadrant.active {
+            transform: scale(1.05);
+            box-shadow: 0 0 0 3px rgba(212, 168, 87, 0.5);
+        }
+
+        /* Allocation bar segments */
+        .allocation-segment {
+            transition: width 0.5s ease;
+        }
+
+        /* Table row hover */
+        .data-row:hover {
+            background-color: rgba(15, 76, 117, 0.05);
+        }
+
+        .dark .data-row:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Sparkline placeholder */
+        .sparkline {
+            height: 40px;
+            background: linear-gradient(90deg, transparent 0%, rgba(5, 150, 105, 0.2) 50%, transparent 100%);
+        }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full bg-gray-50 dark:bg-gray-900" x-data="{ darkMode: localStorage.getItem('darkMode') === 'true', sidebarOpen: false }"
+      :class="{ 'dark': darkMode }"
+      x-init="$watch('darkMode', val => localStorage.setItem('darkMode', val))">
+
+    <div class="min-h-full">
+        <!-- Navigation -->
+        <nav class="bg-navy dark:bg-gray-800 shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <!-- Logo -->
+                    <div class="flex items-center">
+                        <a href="/dashboard" class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-gold rounded flex items-center justify-center">
+                                <span class="text-navy font-bold text-lg">E</span>
+                            </div>
+                            <span class="text-white font-semibold text-xl">Epoch Macro</span>
+                        </a>
+                    </div>
+
+                    <!-- Desktop Navigation -->
+                    <div class="hidden md:block">
+                        <div class="flex items-center space-x-1">
+                            <a href="/dashboard/overview"
+                               class="px-4 py-2 rounded-md text-sm font-medium transition-colors
+                                      {% if page == 'overview' %}bg-navy-dark text-gold{% else %}text-gray-300 hover:bg-navy-dark hover:text-white{% endif %}">
+                                Overview
+                            </a>
+                            <a href="/dashboard/signals"
+                               class="px-4 py-2 rounded-md text-sm font-medium transition-colors
+                                      {% if page == 'signals' %}bg-navy-dark text-gold{% else %}text-gray-300 hover:bg-navy-dark hover:text-white{% endif %}">
+                                Signals
+                            </a>
+                            <a href="/dashboard/allocation"
+                               class="px-4 py-2 rounded-md text-sm font-medium transition-colors
+                                      {% if page == 'allocation' %}bg-navy-dark text-gold{% else %}text-gray-300 hover:bg-navy-dark hover:text-white{% endif %}">
+                                Allocation
+                            </a>
+                            <a href="/dashboard/research"
+                               class="px-4 py-2 rounded-md text-sm font-medium transition-colors
+                                      {% if page == 'research' %}bg-navy-dark text-gold{% else %}text-gray-300 hover:bg-navy-dark hover:text-white{% endif %}">
+                                Research
+                            </a>
+                            <a href="/dashboard/performance"
+                               class="px-4 py-2 rounded-md text-sm font-medium transition-colors
+                                      {% if page == 'performance' %}bg-navy-dark text-gold{% else %}text-gray-300 hover:bg-navy-dark hover:text-white{% endif %}">
+                                Performance
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Right side controls -->
+                    <div class="flex items-center space-x-4">
+                        <!-- Dark mode toggle -->
+                        <button @click="darkMode = !darkMode"
+                                class="p-2 rounded-md text-gray-300 hover:text-white hover:bg-navy-dark transition-colors">
+                            <svg x-show="!darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                            </svg>
+                            <svg x-show="darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                            </svg>
+                        </button>
+
+                        <!-- Refresh button -->
+                        <button onclick="refreshData()"
+                                class="p-2 rounded-md text-gray-300 hover:text-white hover:bg-navy-dark transition-colors"
+                                title="Refresh Data">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                        </button>
+
+                        <!-- Mobile menu button -->
+                        <button @click="sidebarOpen = !sidebarOpen" class="md:hidden p-2 rounded-md text-gray-300 hover:text-white">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Navigation -->
+            <div x-show="sidebarOpen" x-transition class="md:hidden bg-navy-dark">
+                <div class="px-2 pt-2 pb-3 space-y-1">
+                    <a href="/dashboard/overview" class="block px-3 py-2 rounded-md text-base font-medium text-white hover:bg-navy">Overview</a>
+                    <a href="/dashboard/signals" class="block px-3 py-2 rounded-md text-base font-medium text-white hover:bg-navy">Signals</a>
+                    <a href="/dashboard/allocation" class="block px-3 py-2 rounded-md text-base font-medium text-white hover:bg-navy">Allocation</a>
+                    <a href="/dashboard/research" class="block px-3 py-2 rounded-md text-base font-medium text-white hover:bg-navy">Research</a>
+                    <a href="/dashboard/performance" class="block px-3 py-2 rounded-md text-base font-medium text-white hover:bg-navy">Performance</a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto">
+            <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+                    <span>Epoch Macro &copy; 2026</span>
+                    <span>Last updated: {{ signals.timestamp.strftime('%Y-%m-%d %H:%M') if signals else 'N/A' }}</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        async function refreshData() {
+            try {
+                const response = await fetch('/api/refresh', { method: 'POST' });
+                const data = await response.json();
+                if (data.status === 'refreshed') {
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Failed to refresh:', error);
+            }
+        }
+    </script>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

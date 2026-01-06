@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Allocation - Epoch Macro{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Portfolio Allocation</h1>
+        <p class="text-gray-500 dark:text-gray-400 mt-1">
+            Detailed position sizing and allocation breakdown
+        </p>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Total Leverage</div>
+            <div class="text-2xl font-bold text-navy dark:text-white">{{ "%.2f"|format(signals.total_leverage) }}x</div>
+            <div class="text-xs text-gray-400">Target exposure</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Positions</div>
+            <div class="text-2xl font-bold text-navy dark:text-white">{{ positions|length }}</div>
+            <div class="text-xs text-gray-400">Active holdings</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Largest Position</div>
+            <div class="text-2xl font-bold text-navy dark:text-white">
+                {% if positions %}{{ (positions[0].weight * 100)|round(1) }}%{% else %}0%{% endif %}
+            </div>
+            <div class="text-xs text-gray-400">{{ positions[0].ticker if positions else 'N/A' }}</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Regime</div>
+            <div class="text-2xl font-bold text-gold">{{ signals.current_regime }}</div>
+            <div class="text-xs text-gray-400">Current quadrants</div>
+        </div>
+    </div>
+
+    <!-- Asset Class Breakdown -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Asset Class Breakdown</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Donut Chart -->
+            <div class="h-64">
+                <canvas id="allocationChart"></canvas>
+            </div>
+
+            <!-- Breakdown List -->
+            <div class="space-y-4">
+                {% set colors = {'Equities': '#0F4C75', 'Bonds': '#60A5FA', 'Commodities': '#D4A857', 'Crypto': '#8B5CF6', 'Real Assets': '#10B981', 'Cash': '#9CA3AF'} %}
+                {% for asset_class, weight in breakdown.items() %}
+                    {% if weight > 0 %}
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-4 h-4 rounded" style="background-color: {{ colors[asset_class] }}"></div>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ asset_class }}</span>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-semibold text-gray-900 dark:text-white">{{ (weight * 100)|round(1) }}%</div>
+                            <div class="text-xs text-gray-500">${{ "{:,.0f}".format(weight * 10000) }} / $10k</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Position Details -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Position Details</h2>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th class="px-4 py-3">#</th>
+                        <th class="px-4 py-3">Ticker</th>
+                        <th class="px-4 py-3">Weight</th>
+                        <th class="px-4 py-3">Notional ($10k)</th>
+                        <th class="px-4 py-3">Quadrant</th>
+                        <th class="px-4 py-3 hidden sm:table-cell">% of Total</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    {% for pos in positions %}
+                    <tr class="data-row">
+                        <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ loop.index }}</td>
+                        <td class="px-4 py-3">
+                            <span class="font-semibold text-gray-900 dark:text-white">{{ pos.ticker }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-24 bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+                                    <div class="bg-navy dark:bg-gold h-2.5 rounded-full" style="width: {{ (pos.weight / signals.total_leverage * 100)|round }}%"></div>
+                                </div>
+                                <span class="font-medium text-gray-900 dark:text-white">{{ (pos.weight * 100)|round(2) }}%</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                            ${{ "{:,.0f}".format(pos.notional_10k) }}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% for quad in pos.quadrants %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mr-1
+                                {% if quad == 'Q1' %}bg-success/10 text-success
+                                {% elif quad == 'Q2' %}bg-gold/10 text-gold-dark
+                                {% elif quad == 'Q3' %}bg-warning/10 text-warning
+                                {% else %}bg-navy/10 text-navy{% endif %}">
+                                {{ quad }}
+                            </span>
+                            {% endfor %}
+                        </td>
+                        <td class="px-4 py-3 hidden sm:table-cell text-gray-600 dark:text-gray-300">
+                            {{ (pos.weight / signals.total_leverage * 100)|round(1) }}%
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-gray-50 dark:bg-gray-700">
+                    <tr class="font-semibold">
+                        <td class="px-4 py-3" colspan="2">Total</td>
+                        <td class="px-4 py-3">{{ (signals.total_leverage * 100)|round(1) }}%</td>
+                        <td class="px-4 py-3">${{ "{:,.0f}".format(signals.total_leverage * 10000) }}</td>
+                        <td class="px-4 py-3" colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Quadrant Allocation Info -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for quad in signals.top_quadrants %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 ring-2 ring-gold/30">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                {{ quad }} - {{ quad_descriptions[quad].split('(')[1].replace(')', '') }}
+            </h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                {{ quad_descriptions[quad] }}
+            </p>
+
+            <div class="text-sm text-gray-600 dark:text-gray-300">
+                <div class="font-medium mb-2">Assets in this quadrant:</div>
+                <div class="flex flex-wrap gap-2">
+                    {% for ticker in quad_allocations[quad].keys() %}
+                    <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">{{ ticker }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Allocation Donut Chart
+    const ctx = document.getElementById('allocationChart').getContext('2d');
+
+    const breakdown = {{ breakdown | tojson }};
+    const labels = Object.keys(breakdown).filter(k => breakdown[k] > 0);
+    const data = labels.map(k => (breakdown[k] * 100).toFixed(1));
+
+    const colors = {
+        'Equities': '#0F4C75',
+        'Bonds': '#60A5FA',
+        'Commodities': '#D4A857',
+        'Crypto': '#8B5CF6',
+        'Real Assets': '#10B981',
+        'Cash': '#9CA3AF'
+    };
+
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: labels.map(l => colors[l]),
+                borderWidth: 0,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

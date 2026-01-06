@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Research - Epoch Macro{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Research & Daily Notes</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">
+                Market analysis and strategy commentary
+            </p>
+        </div>
+
+        <!-- Search -->
+        <div class="relative">
+            <input type="text" placeholder="Search notes..."
+                   class="pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm w-64">
+            <svg class="absolute left-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Current Regime Summary -->
+    <div class="bg-gradient-to-r from-navy to-navy-dark rounded-xl shadow-sm p-6 text-white">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <div class="text-sm text-gray-300 mb-1">Current Regime</div>
+                <div class="text-3xl font-bold">{{ signals.current_regime }}</div>
+                <div class="text-sm text-gray-300 mt-2">
+                    {{ quad_descriptions[signals.top_quadrants[0]] }} + {{ quad_descriptions[signals.top_quadrants[1]] }}
+                </div>
+            </div>
+            <div class="flex gap-6">
+                <div class="text-center">
+                    <div class="text-sm text-gray-300">Primary</div>
+                    <div class="text-2xl font-bold text-gold">{{ signals.top_quadrants[0] }}</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-sm text-gray-300">Secondary</div>
+                    <div class="text-2xl font-bold">{{ signals.top_quadrants[1] }}</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-sm text-gray-300">Leverage</div>
+                    <div class="text-2xl font-bold">{{ "%.1f"|format(signals.total_leverage) }}x</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Notes List -->
+    <div class="space-y-4">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Notes</h2>
+
+        {% for note in research_notes %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer"
+             x-data="{ expanded: false }" @click="expanded = !expanded">
+            <div class="flex items-start justify-between">
+                <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-sm text-gray-500 dark:text-gray-400">{{ note.date }}</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-navy/10 text-navy dark:bg-gold/10 dark:text-gold">
+                            {{ note.regime }}
+                        </span>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">{{ note.title }}</h3>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">{{ note.summary }}</p>
+                </div>
+                <svg class="w-5 h-5 text-gray-400 transform transition-transform" :class="{ 'rotate-180': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </div>
+
+            <!-- Expanded Content -->
+            <div x-show="expanded" x-transition class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="prose dark:prose-invert max-w-none text-sm">
+                    <p class="text-gray-600 dark:text-gray-300">
+                        Full analysis would appear here. This section includes detailed market commentary,
+                        regime analysis, position rationale, and risk considerations.
+                    </p>
+                    <p class="text-gray-600 dark:text-gray-300 mt-2">
+                        Key observations:
+                    </p>
+                    <ul class="list-disc list-inside text-gray-600 dark:text-gray-300 mt-2 space-y-1">
+                        <li>Momentum scores continue to favor growth assets</li>
+                        <li>All positions remain above their 50-day EMA</li>
+                        <li>No rebalancing required at this time</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Regime History Timeline -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Regime History</h2>
+
+        <div class="relative">
+            <!-- Timeline line -->
+            <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
+
+            <div class="space-y-6">
+                <!-- Current -->
+                <div class="relative flex items-start gap-4 pl-10">
+                    <div class="absolute left-2 w-4 h-4 rounded-full bg-gold border-2 border-white dark:border-gray-800"></div>
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Jan 2026 - Present</div>
+                        <div class="font-semibold text-gray-900 dark:text-white">Q1 + Q3</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-300">Goldilocks with Stagflation hedge</div>
+                    </div>
+                </div>
+
+                <!-- Previous -->
+                <div class="relative flex items-start gap-4 pl-10">
+                    <div class="absolute left-2 w-4 h-4 rounded-full bg-gray-400 border-2 border-white dark:border-gray-800"></div>
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Nov 2025 - Jan 2026</div>
+                        <div class="font-semibold text-gray-900 dark:text-white">Q1 + Q2</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-300">Goldilocks with Reflation</div>
+                    </div>
+                </div>
+
+                <!-- Older -->
+                <div class="relative flex items-start gap-4 pl-10">
+                    <div class="absolute left-2 w-4 h-4 rounded-full bg-gray-400 border-2 border-white dark:border-gray-800"></div>
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Sep 2025 - Nov 2025</div>
+                        <div class="font-semibold text-gray-900 dark:text-white">Q2 + Q3</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-300">Reflation with Stagflation</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Note Generation (placeholder for future feature) -->
+    <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl shadow-sm p-6 text-white">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <h3 class="font-semibold text-lg">AI-Generated Daily Note</h3>
+                <p class="text-white/80 text-sm">Generate an AI-powered analysis of today's market conditions and portfolio positioning.</p>
+            </div>
+            <button class="px-4 py-2 bg-white text-purple-600 rounded-lg font-medium hover:bg-white/90 transition-colors"
+                    onclick="generateAINote()">
+                Generate Note
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function generateAINote() {
+        // Placeholder for AI note generation
+        alert('AI Note generation coming soon! This will use the Anthropic API to generate market analysis.');
+    }
+</script>
+{% endblock %}
