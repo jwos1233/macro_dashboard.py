@@ -311,8 +311,8 @@ def create_daily_note(signals: dict) -> Optional[Dict]:
     notes = load_notes()
     notes.insert(0, note)
 
-    # Keep only last 30 days of notes
-    notes = notes[:30]
+    # Keep all notes (no limit - save in perpetuity)
+    # notes = notes[:30]  # Removed limit
 
     # Save
     if save_notes(notes):
@@ -328,13 +328,14 @@ def get_recent_notes(limit: int = 10) -> List[Dict]:
     return notes[:limit]
 
 
-def ensure_todays_note(signals: dict) -> List[Dict]:
+def ensure_todays_note(signals: dict, display_limit: int = 4) -> List[Dict]:
     """
     Ensure today's note exists, creating it if needed.
     Returns list of recent notes for display.
 
     Args:
         signals: Current trading signals (used if note needs to be generated)
+        display_limit: Number of notes to return for display (default 4)
 
     Returns:
         List of recent notes including today's
@@ -342,4 +343,4 @@ def ensure_todays_note(signals: dict) -> List[Dict]:
     if not has_todays_note():
         create_daily_note(signals)
 
-    return get_recent_notes()
+    return get_recent_notes(limit=display_limit)
