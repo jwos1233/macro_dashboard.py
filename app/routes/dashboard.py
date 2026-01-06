@@ -395,6 +395,7 @@ async def performance_page(request: Request):
         "regime_performance": backtest.get('regime_performance', {}),
         "vs_benchmark": benchmark,
         "equity_curve": backtest.get('equity_curve', []),
+        "spy_curve": backtest.get('spy_curve', []),
         "quad_descriptions": QUADRANT_DESCRIPTIONS,
         "data_source": backtest.get('data_source', 'unknown'),
         "generated_at": backtest.get('generated_at'),

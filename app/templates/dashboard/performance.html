@@ -75,14 +75,22 @@
     </div>
 
     <!-- Equity Curve Chart -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6" x-data="{ period: 'all' }">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Equity Curve</h2>
             <div class="flex gap-2">
-                <button class="px-3 py-1 text-sm rounded bg-navy text-white">All</button>
-                <button class="px-3 py-1 text-sm rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">1Y</button>
-                <button class="px-3 py-1 text-sm rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">6M</button>
-                <button class="px-3 py-1 text-sm rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">3M</button>
+                <button @click="period = 'all'; updateChart('all')"
+                        :class="period === 'all' ? 'bg-navy text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'"
+                        class="px-3 py-1 text-sm rounded transition-colors">All</button>
+                <button @click="period = '2y'; updateChart('2y')"
+                        :class="period === '2y' ? 'bg-navy text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'"
+                        class="px-3 py-1 text-sm rounded transition-colors">2Y</button>
+                <button @click="period = '1y'; updateChart('1y')"
+                        :class="period === '1y' ? 'bg-navy text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'"
+                        class="px-3 py-1 text-sm rounded transition-colors">1Y</button>
+                <button @click="period = '6m'; updateChart('6m')"
+                        :class="period === '6m' ? 'bg-navy text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'"
+                        class="px-3 py-1 text-sm rounded transition-colors">6M</button>
             </div>
         </div>
         <div class="h-80">
@@ -233,36 +241,91 @@
 
 {% block extra_scripts %}
 <script>
-    // Equity Curve Chart - using real backtest data
+    // Parse data from backtest
+    const fullEquityCurve = {{ equity_curve | tojson }};
+    const fullSpyCurve = {{ spy_curve | tojson }};
+
+    // Store full data for filtering
+    const fullLabels = fullEquityCurve.map(d => d.date);
+    const fullValues = fullEquityCurve.map(d => d.value);
+    const fullDrawdowns = fullEquityCurve.map(d => d.drawdown);
+    const fullSpyValues = fullSpyCurve.map(d => d.value);
+
+    // Initial value for normalization
+    const initialValue = fullValues[0] || 50000;
+    const spyInitialValue = fullSpyValues[0] || 50000;
+
+    // Filter data by time period
+    function filterByPeriod(period) {
+        const now = new Date();
+        let cutoffDate;
+
+        switch(period) {
+            case '6m':
+                cutoffDate = new Date(now.setMonth(now.getMonth() - 6));
+                break;
+            case '1y':
+                cutoffDate = new Date(now.setFullYear(now.getFullYear() - 1));
+                break;
+            case '2y':
+                cutoffDate = new Date(now.setFullYear(now.getFullYear() - 2));
+                break;
+            default: // 'all'
+                cutoffDate = new Date('1900-01-01');
+        }
+
+        const indices = [];
+        fullLabels.forEach((dateStr, i) => {
+            if (new Date(dateStr) >= cutoffDate) {
+                indices.push(i);
+            }
+        });
+
+        return indices;
+    }
+
+    // Normalize values to percentage from period start
+    function normalizeFromStart(values, indices) {
+        if (indices.length === 0) return [];
+        const startVal = values[indices[0]];
+        return indices.map(i => ((values[i] / startVal) * 100).toFixed(1));
+    }
+
+    // Create the equity chart
     const equityCtx = document.getElementById('equityChart').getContext('2d');
-
-    // Parse equity curve data from backtest
-    const equityCurve = {{ equity_curve | tojson }};
-    const labels = equityCurve.map(d => d.date);
-    const values = equityCurve.map(d => d.value);
-    const drawdowns = equityCurve.map(d => d.drawdown);
-
-    // Normalize to percentage returns for chart display
-    const initialValue = values[0] || 50000;
-    const normalizedValues = values.map(v => ((v / initialValue) * 100).toFixed(1));
-
-    new Chart(equityCtx, {
+    let equityChart = new Chart(equityCtx, {
         type: 'line',
         data: {
-            labels: labels,
-            datasets: [{
-                label: 'Epoch Macro',
-                data: normalizedValues,
-                borderColor: '#0F4C75',
-                backgroundColor: 'rgba(15, 76, 117, 0.1)',
-                fill: true,
-                tension: 0.4,
-                borderWidth: 2,
-            }]
+            labels: fullLabels,
+            datasets: [
+                {
+                    label: 'Epoch Macro',
+                    data: fullValues.map(v => ((v / initialValue) * 100).toFixed(1)),
+                    borderColor: '#0F4C75',
+                    backgroundColor: 'rgba(15, 76, 117, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 2,
+                },
+                {
+                    label: 'SPY',
+                    data: fullSpyValues.map(v => ((v / spyInitialValue) * 100).toFixed(1)),
+                    borderColor: '#9CA3AF',
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.4,
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                }
+            ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
             plugins: {
                 legend: {
                     position: 'top',
@@ -270,9 +333,7 @@
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            const idx = context.dataIndex;
-                            const value = values[idx];
-                            return `$${value.toLocaleString()} (${context.parsed.y}%)`;
+                            return `${context.dataset.label}: ${context.parsed.y}%`;
                         }
                     }
                 }
@@ -298,16 +359,38 @@
         }
     });
 
-    // Drawdown Chart - using real backtest data
-    const ddCtx = document.getElementById('drawdownChart').getContext('2d');
+    // Update chart based on period selection
+    function updateChart(period) {
+        const indices = filterByPeriod(period);
+        const filteredLabels = indices.map(i => fullLabels[i]);
+        const filteredValues = indices.map(i => fullValues[i]);
+        const filteredSpyValues = indices.map(i => fullSpyValues[i] || 0);
+        const filteredDrawdowns = indices.map(i => fullDrawdowns[i]);
 
-    new Chart(ddCtx, {
+        // Normalize from period start
+        const normalizedValues = normalizeFromStart(fullValues, indices);
+        const normalizedSpyValues = normalizeFromStart(fullSpyValues, indices);
+
+        equityChart.data.labels = filteredLabels;
+        equityChart.data.datasets[0].data = normalizedValues;
+        equityChart.data.datasets[1].data = normalizedSpyValues;
+        equityChart.update();
+
+        // Also update drawdown chart
+        drawdownChart.data.labels = filteredLabels;
+        drawdownChart.data.datasets[0].data = filteredDrawdowns;
+        drawdownChart.update();
+    }
+
+    // Drawdown Chart
+    const ddCtx = document.getElementById('drawdownChart').getContext('2d');
+    let drawdownChart = new Chart(ddCtx, {
         type: 'line',
         data: {
-            labels: labels,
+            labels: fullLabels,
             datasets: [{
                 label: 'Drawdown %',
-                data: drawdowns,
+                data: fullDrawdowns,
                 borderColor: '#B91C1C',
                 backgroundColor: 'rgba(185, 28, 28, 0.2)',
                 fill: true,

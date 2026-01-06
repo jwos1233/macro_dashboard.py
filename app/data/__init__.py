@@ -84,13 +84,16 @@ def run_live_backtest() -> Optional[dict]:
 
         # Build equity curve data
         equity_curve = []
+        spy_curve = []  # SPY benchmark curve
         cummax = portfolio_value.expanding().max()
         drawdown = (portfolio_value - cummax) / cummax * 100
 
         # Sample every N days to keep data manageable
         sample_rate = max(1, len(portfolio_value) // 50)
+        sample_dates = []
         for i, date in enumerate(portfolio_value.index):
             if i % sample_rate == 0 or i == len(portfolio_value) - 1:
+                sample_dates.append(date)
                 equity_curve.append({
                     'date': date.strftime('%Y-%m-%d'),
                     'value': round(float(portfolio_value.iloc[i]), 2),
@@ -219,6 +222,22 @@ def run_live_backtest() -> Optional[dict]:
                         var = aligned[1].var()
                         beta = cov / var if var > 0 else 0
                         vs_benchmark['beta'] = round(float(beta), 2)
+
+                    # Build SPY curve for chart overlay (normalized to same starting point)
+                    spy_initial = float(spy_close.iloc[0])
+                    for sample_date in sample_dates:
+                        # Find closest date in SPY data
+                        try:
+                            closest_idx = spy_close.index.get_indexer([sample_date], method='nearest')[0]
+                            spy_val = float(spy_close.iloc[closest_idx])
+                            # Normalize to portfolio initial capital for comparison
+                            spy_normalized = (spy_val / spy_initial) * INITIAL_CAPITAL
+                            spy_curve.append({
+                                'date': sample_date.strftime('%Y-%m-%d'),
+                                'value': round(spy_normalized, 2)
+                            })
+                        except Exception:
+                            pass
         except Exception as e:
             print(f"Could not fetch SPY data: {e}")
 
@@ -246,6 +265,7 @@ def run_live_backtest() -> Optional[dict]:
             'monthly_returns': monthly_returns,
             'regime_history': regime_history,
             'equity_curve': equity_curve,
+            'spy_curve': spy_curve,
             'generated_at': datetime.now().isoformat()
         }
 
@@ -337,6 +357,7 @@ def get_default_backtest_results() -> dict:
         "monthly_returns": [],
         "regime_history": [],
         "equity_curve": [],
+        "spy_curve": [],
         "generated_at": None
     }
 
