@@ -153,3 +153,50 @@ async def refresh_backtest():
         "total_return": backtest.get('summary', {}).get('total_return', 0),
         "last_error": get_last_error(),
     }
+
+
+@router.post("/notes/generate")
+async def generate_daily_note():
+    """Generate a new daily note using AI"""
+    from app.data.notes import create_daily_note, get_todays_note
+    from app.routes.dashboard import get_signals
+
+    # Check if today's note already exists
+    existing = get_todays_note()
+    if existing:
+        return {
+            "status": "exists",
+            "message": "Today's note already exists",
+            "note": existing
+        }
+
+    # Get current signals for context
+    signals = get_signals()
+
+    # Generate note
+    note = create_daily_note(signals)
+
+    if note:
+        return {
+            "status": "success",
+            "message": "Note generated successfully",
+            "note": note
+        }
+    else:
+        return {
+            "status": "error",
+            "error": "Failed to generate note. Check ANTHROPIC_API_KEY environment variable."
+        }
+
+
+@router.get("/notes")
+async def get_notes():
+    """Get recent daily notes"""
+    from app.data.notes import get_recent_notes
+
+    notes = get_recent_notes(limit=10)
+
+    return {
+        "notes": notes,
+        "count": len(notes)
+    }

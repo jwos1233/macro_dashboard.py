@@ -54,9 +54,10 @@
     <div class="space-y-4">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Notes</h2>
 
+        {% if research_notes %}
         {% for note in research_notes %}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer"
-             x-data="{ expanded: false }" @click="expanded = !expanded">
+             x-data="{ expanded: {{ 'true' if loop.first else 'false' }} }" @click="expanded = !expanded">
             <div class="flex items-start justify-between">
                 <div class="flex-1">
                     <div class="flex items-center gap-3 mb-2">
@@ -64,11 +65,16 @@
                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-navy/10 text-navy dark:bg-gold/10 dark:text-gold">
                             {{ note.regime }}
                         </span>
+                        {% if loop.first %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                            Latest
+                        </span>
+                        {% endif %}
                     </div>
                     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">{{ note.title }}</h3>
-                    <p class="text-gray-600 dark:text-gray-300 text-sm">{{ note.summary }}</p>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-2">{{ note.content[:150] }}{% if note.content|length > 150 %}...{% endif %}</p>
                 </div>
-                <svg class="w-5 h-5 text-gray-400 transform transition-transform" :class="{ 'rotate-180': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 text-gray-400 transform transition-transform flex-shrink-0 ml-4" :class="{ 'rotate-180': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </div>
@@ -76,22 +82,27 @@
             <!-- Expanded Content -->
             <div x-show="expanded" x-transition class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <div class="prose dark:prose-invert max-w-none text-sm">
-                    <p class="text-gray-600 dark:text-gray-300">
-                        Full analysis would appear here. This section includes detailed market commentary,
-                        regime analysis, position rationale, and risk considerations.
-                    </p>
-                    <p class="text-gray-600 dark:text-gray-300 mt-2">
-                        Key observations:
-                    </p>
-                    <ul class="list-disc list-inside text-gray-600 dark:text-gray-300 mt-2 space-y-1">
-                        <li>Momentum scores continue to favor growth assets</li>
-                        <li>All positions remain above their 50-day EMA</li>
-                        <li>No rebalancing required at this time</li>
-                    </ul>
+                    {% for paragraph in note.content.split('\n\n') %}
+                    <p class="text-gray-600 dark:text-gray-300 mb-3">{{ paragraph }}</p>
+                    {% endfor %}
                 </div>
+                {% if note.generated_at %}
+                <div class="mt-4 text-xs text-gray-400">
+                    Generated: {{ note.generated_at[:16].replace('T', ' ') }}
+                </div>
+                {% endif %}
             </div>
         </div>
         {% endfor %}
+        {% else %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center">
+            <svg class="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No notes yet</h3>
+            <p class="text-gray-500 dark:text-gray-400 text-sm mb-4">Click the button below to generate your first daily note.</p>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Regime History Timeline -->
@@ -123,8 +134,8 @@
         </div>
     </div>
 
-    <!-- AI Note Generation (placeholder for future feature) -->
-    <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl shadow-sm p-6 text-white">
+    <!-- AI Note Generation -->
+    <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl shadow-sm p-6 text-white" x-data="{ generating: false, error: null }">
         <div class="flex items-center gap-4">
             <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -134,10 +145,19 @@
             <div class="flex-1">
                 <h3 class="font-semibold text-lg">AI-Generated Daily Note</h3>
                 <p class="text-white/80 text-sm">Generate an AI-powered analysis of today's market conditions and portfolio positioning.</p>
+                <p x-show="error" x-text="error" class="text-red-200 text-sm mt-1"></p>
             </div>
-            <button class="px-4 py-2 bg-white text-purple-600 rounded-lg font-medium hover:bg-white/90 transition-colors"
-                    onclick="generateAINote()">
-                Generate Note
+            <button class="px-4 py-2 bg-white text-purple-600 rounded-lg font-medium hover:bg-white/90 transition-colors disabled:opacity-50"
+                    :disabled="generating"
+                    @click="generateNote($el)">
+                <span x-show="!generating">Generate Note</span>
+                <span x-show="generating" class="flex items-center gap-2">
+                    <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Generating...
+                </span>
             </button>
         </div>
     </div>
@@ -146,9 +166,30 @@
 
 {% block extra_scripts %}
 <script>
-    function generateAINote() {
-        // Placeholder for AI note generation
-        alert('AI Note generation coming soon! This will use the Anthropic API to generate market analysis.');
+    async function generateNote(el) {
+        const component = Alpine.$data(el.closest('[x-data]'));
+        component.generating = true;
+        component.error = null;
+
+        try {
+            const response = await fetch('/api/notes/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                // Reload the page to show the new note
+                window.location.reload();
+            } else {
+                component.error = data.error || 'Failed to generate note';
+            }
+        } catch (err) {
+            component.error = 'Network error: ' + err.message;
+        } finally {
+            component.generating = false;
+        }
     }
 </script>
 {% endblock %}

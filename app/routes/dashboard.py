@@ -237,30 +237,13 @@ async def allocation_page(request: Request):
 @router.get("/dashboard/research")
 async def research_page(request: Request):
     """Research/daily notes page"""
+    from app.data.notes import ensure_todays_note
+
     signals = get_signals()
     backtest = load_backtest_results()
 
-    # Mock research notes for now (TODO: integrate with AI generation)
-    research_notes = [
-        {
-            'date': '2026-01-06',
-            'title': 'Regime Shift: Q1 Dominance Continues',
-            'summary': 'Growth momentum remains strong with tech leading. Goldilocks conditions persist as inflation moderates.',
-            'regime': 'Q1 + Q3',
-        },
-        {
-            'date': '2026-01-05',
-            'title': 'Weekly Rebalance: Adding Commodity Exposure',
-            'summary': 'Increasing allocation to energy and materials as Q3 scores improve.',
-            'regime': 'Q1 + Q3',
-        },
-        {
-            'date': '2026-01-04',
-            'title': 'Market Update: Momentum Confirmation',
-            'summary': 'All positions remain above 50-day EMA. No changes to current allocation.',
-            'regime': 'Q1 + Q3',
-        },
-    ]
+    # Get daily notes (auto-generates today's if missing)
+    research_notes = ensure_todays_note(signals)
 
     # Get regime history from backtest
     regime_history = backtest.get('regime_history', [])
