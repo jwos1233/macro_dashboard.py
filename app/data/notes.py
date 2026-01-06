@@ -140,9 +140,13 @@ def generate_note_content(signals: dict) -> Optional[Dict]:
     # Build context from signals
     top_quads = signals.get('top_quadrants', ('Q1', 'Q2'))
     regime = signals.get('current_regime', 'Unknown')
-    scores = signals.get('quadrant_scores', {})
-    weights = signals.get('target_weights', {})
+    scores_raw = signals.get('quadrant_scores', {})
+    weights_raw = signals.get('target_weights', {})
     leverage = signals.get('total_leverage', 1.0)
+
+    # Convert pandas Series to dict if needed
+    scores = dict(scores_raw) if hasattr(scores_raw, 'items') else scores_raw
+    weights = dict(weights_raw) if hasattr(weights_raw, 'items') else weights_raw
 
     # Format data for prompt
     today_str = date.today().strftime("%B %d, %Y")
