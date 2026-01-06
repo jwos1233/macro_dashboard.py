@@ -108,14 +108,12 @@
                     <tr class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                         <th class="pb-3">Month</th>
                         <th class="pb-3">Return</th>
-                        <th class="pb-3">Cumulative</th>
-                        <th class="pb-3 hidden sm:table-cell">Regime</th>
+                        <th class="pb-3">Drawdown</th>
+                        <th class="pb-3 hidden sm:table-cell">Sharpe</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                    {% set cumulative = 0 %}
                     {% for month in monthly_returns %}
-                    {% set cumulative = cumulative + month.return %}
                     <tr class="data-row">
                         <td class="py-3 font-medium text-gray-900 dark:text-white">{{ month.month }}</td>
                         <td class="py-3">
@@ -123,13 +121,11 @@
                                 {% if month.return >= 0 %}+{% endif %}{{ month.return }}%
                             </span>
                         </td>
-                        <td class="py-3 text-gray-600 dark:text-gray-300">
-                            {% if cumulative >= 0 %}+{% endif %}{{ "%.1f"|format(cumulative) }}%
+                        <td class="py-3 text-warning font-medium">
+                            {{ "%.1f"|format(month.drawdown) }}%
                         </td>
-                        <td class="py-3 hidden sm:table-cell">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-navy/10 text-navy dark:bg-gold/10 dark:text-gold">
-                                Q1 + Q3
-                            </span>
+                        <td class="py-3 hidden sm:table-cell text-gray-600 dark:text-gray-300">
+                            {{ "%.2f"|format(month.sharpe) }}
                         </td>
                     </tr>
                     {% endfor %}
@@ -284,11 +280,11 @@
         return indices;
     }
 
-    // Normalize values to percentage from period start
+    // Normalize values to percentage gain from period start (0% = starting point)
     function normalizeFromStart(values, indices) {
         if (indices.length === 0) return [];
         const startVal = values[indices[0]];
-        return indices.map(i => ((values[i] / startVal) * 100).toFixed(1));
+        return indices.map(i => (((values[i] / startVal) - 1) * 100).toFixed(1));
     }
 
     // Create the equity chart
@@ -300,7 +296,7 @@
             datasets: [
                 {
                     label: 'Epoch Macro',
-                    data: fullValues.map(v => ((v / initialValue) * 100).toFixed(1)),
+                    data: fullValues.map(v => (((v / initialValue) - 1) * 100).toFixed(1)),
                     borderColor: '#0F4C75',
                     backgroundColor: 'rgba(15, 76, 117, 0.1)',
                     fill: true,
@@ -309,7 +305,7 @@
                 },
                 {
                     label: 'SPY',
-                    data: fullSpyValues.map(v => ((v / spyInitialValue) * 100).toFixed(1)),
+                    data: fullSpyValues.map(v => (((v / spyInitialValue) - 1) * 100).toFixed(1)),
                     borderColor: '#9CA3AF',
                     backgroundColor: 'transparent',
                     fill: false,

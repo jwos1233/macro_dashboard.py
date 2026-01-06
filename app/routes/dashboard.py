@@ -382,7 +382,8 @@ async def performance_page(request: Request):
         monthly_returns.append({
             'month': formatted,
             'return': m.get('return', 0),
-            'regime': m.get('regime', 'N/A')
+            'drawdown': m.get('drawdown', 0),
+            'sharpe': m.get('sharpe', 0)
         })
 
     return templates.TemplateResponse("dashboard/performance.html", {
