@@ -244,10 +244,8 @@ def run_live_backtest() -> Optional[dict]:
                                     combined[ticker] = combined.get(ticker, 0) + weight * 0.5
 
                         breakdown = categorize_allocations(combined)
-                        total = sum(breakdown.values())
-                        if total > 0:
-                            # Normalize to percentages
-                            breakdown = {k: round(v / total * 100, 1) for k, v in breakdown.items()}
+                        # Convert to percentages (don't normalize - leverage means >100% is valid)
+                        breakdown = {k: round(v * 100, 1) for k, v in breakdown.items()}
 
                         asset_class_history.append({
                             'date': sample_date.strftime('%Y-%m-%d'),
