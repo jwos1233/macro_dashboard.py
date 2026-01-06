@@ -7,6 +7,7 @@ from fastapi.templating import Jinja2Templates
 from pathlib import Path
 from datetime import datetime, timedelta
 import sys
+import json
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -25,7 +26,11 @@ from app.data import load_backtest_results
 router = APIRouter()
 templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
 
-# Cache for signals (refresh every 5 minutes in production)
+# Cache settings
+SIGNAL_CACHE_HOURS = 4  # Cache signals for 4 hours (daily data doesn't change often)
+SIGNALS_CACHE_FILE = Path(__file__).parent.parent / "data" / "signals_cache.json"
+
+# In-memory cache for signals
 _signal_cache = None
 _cache_time = None
 
@@ -65,26 +70,94 @@ def get_mock_signals():
     }
 
 
-def get_signals():
-    """Get current signals from signal generator"""
+def save_signals_to_disk(signals: dict):
+    """Save signals to disk for persistence"""
+    try:
+        # Convert to JSON-serializable format
+        cache_data = {
+            'top_quadrants': signals['top_quadrants'],
+            'quadrant_scores': dict(signals['quadrant_scores']) if hasattr(signals['quadrant_scores'], 'items') else signals['quadrant_scores'],
+            'target_weights': dict(signals['target_weights']) if hasattr(signals['target_weights'], 'items') else signals['target_weights'],
+            'current_regime': signals['current_regime'],
+            'timestamp': signals['timestamp'].isoformat() if hasattr(signals['timestamp'], 'isoformat') else str(signals['timestamp']),
+            'total_leverage': signals['total_leverage'],
+            'cached_at': datetime.now().isoformat()
+        }
+        with open(SIGNALS_CACHE_FILE, 'w') as f:
+            json.dump(cache_data, f, indent=2)
+        print(f"Signals cached to disk", flush=True)
+    except Exception as e:
+        print(f"Error saving signals to disk: {e}", flush=True)
+
+
+def load_signals_from_disk():
+    """Load signals from disk if fresh enough"""
     global _signal_cache, _cache_time
 
-    # Use cache if less than 5 minutes old
-    if _signal_cache and _cache_time and (datetime.now() - _cache_time) < timedelta(minutes=5):
+    if not SIGNALS_CACHE_FILE.exists():
+        return None
+
+    try:
+        with open(SIGNALS_CACHE_FILE, 'r') as f:
+            cache_data = json.load(f)
+
+        # Check if cache is still fresh
+        cached_at = datetime.fromisoformat(cache_data['cached_at'])
+        if (datetime.now() - cached_at) > timedelta(hours=SIGNAL_CACHE_HOURS):
+            print("Disk cache expired", flush=True)
+            return None
+
+        # Convert back to expected format
+        signals = {
+            'top_quadrants': tuple(cache_data['top_quadrants']),
+            'quadrant_scores': cache_data['quadrant_scores'],
+            'target_weights': cache_data['target_weights'],
+            'current_regime': cache_data['current_regime'],
+            'timestamp': datetime.fromisoformat(cache_data['timestamp']),
+            'total_leverage': cache_data['total_leverage'],
+            'atr_data': {}
+        }
+
+        _signal_cache = signals
+        _cache_time = cached_at
+        print(f"Loaded signals from disk cache (cached {cached_at})", flush=True)
+        return signals
+    except Exception as e:
+        print(f"Error loading signals from disk: {e}", flush=True)
+        return None
+
+
+def get_signals():
+    """Get current signals from signal generator with caching"""
+    global _signal_cache, _cache_time
+
+    # Check in-memory cache first (fastest)
+    if _signal_cache and _cache_time and (datetime.now() - _cache_time) < timedelta(hours=SIGNAL_CACHE_HOURS):
         return _signal_cache
+
+    # Try loading from disk cache
+    disk_signals = load_signals_from_disk()
+    if disk_signals:
+        return disk_signals
 
     # If signal generator not available, use mock data
     if not SIGNAL_GENERATOR_AVAILABLE:
         return get_mock_signals()
 
+    # Generate fresh signals
     try:
+        print("Generating fresh signals (this may take 30-60 seconds)...", flush=True)
         sg = SignalGenerator()
         signals = sg.generate_signals()
         _signal_cache = signals
         _cache_time = datetime.now()
+
+        # Save to disk for persistence
+        save_signals_to_disk(signals)
+
         return signals
     except Exception as e:
-        print(f"Error generating signals: {e}")
+        print(f"Error generating signals: {e}", flush=True)
         # Return mock data if signal generation fails
         return get_mock_signals()
 
