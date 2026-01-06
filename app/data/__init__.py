@@ -100,14 +100,33 @@ def run_live_backtest() -> Optional[dict]:
                     'drawdown': round(float(drawdown.iloc[i]), 2)
                 })
 
-        # Build monthly returns
+        # Build monthly returns with drawdown and sharpe
         monthly_returns = []
         monthly = portfolio_value.resample('M').last().pct_change().dropna()
         for date, ret in monthly.tail(12).items():
+            # Get daily returns for this month to calculate sharpe
+            year, month = date.year, date.month
+            month_data = portfolio_value[(portfolio_value.index.year == year) & (portfolio_value.index.month == month)]
+            daily_returns = month_data.pct_change().dropna()
+
+            # Monthly Sharpe (annualized from daily)
+            if len(daily_returns) > 1 and daily_returns.std() > 0:
+                monthly_sharpe = (daily_returns.mean() / daily_returns.std()) * np.sqrt(252)
+            else:
+                monthly_sharpe = 0
+
+            # Monthly max drawdown
+            if len(month_data) > 0:
+                month_cummax = month_data.expanding().max()
+                month_dd = ((month_data - month_cummax) / month_cummax).min() * 100
+            else:
+                month_dd = 0
+
             monthly_returns.append({
                 'month': date.strftime('%Y-%m'),
                 'return': round(float(ret * 100), 2),
-                'regime': 'N/A'  # Could extract from quad_history
+                'drawdown': round(float(month_dd), 1),
+                'sharpe': round(float(monthly_sharpe), 2)
             })
         monthly_returns.reverse()
 
