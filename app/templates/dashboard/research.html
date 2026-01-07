@@ -165,6 +165,47 @@
 {% block extra_scripts %}
 <!-- Marked.js for Markdown rendering -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+    /* Add spacing between sections in rendered notes */
+    .note-content h2 {
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e5e7eb;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #1f2937;
+    }
+    .note-content h2:first-child {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: none;
+    }
+    .dark .note-content h2 {
+        border-top-color: #374151;
+        color: #f3f4f6;
+    }
+    .note-content p {
+        margin-bottom: 0.75rem;
+    }
+    .note-content ul, .note-content ol {
+        margin-bottom: 0.75rem;
+        padding-left: 1.5rem;
+    }
+    .note-content table {
+        margin: 1rem 0;
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .note-content th, .note-content td {
+        padding: 0.5rem;
+        border: 1px solid #e5e7eb;
+        text-align: left;
+    }
+    .dark .note-content th, .dark .note-content td {
+        border-color: #374151;
+    }
+</style>
 <script>
     // Configure marked for safe rendering
     marked.setOptions({
