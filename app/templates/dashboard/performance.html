@@ -39,38 +39,38 @@
     <!-- Key Metrics -->
     <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
-            <div class="text-sm text-gray-500 dark:text-gray-400">YTD Return</div>
-            <div class="text-2xl font-bold {% if performance.ytd_return >= 0 %}text-success{% else %}text-warning{% endif %}">
-                {% if performance.ytd_return >= 0 %}+{% endif %}{{ "%.1f"|format(performance.ytd_return) }}%
-            </div>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
-            <div class="text-sm text-gray-500 dark:text-gray-400">MTD Return</div>
-            <div class="text-2xl font-bold {% if performance.mtd_return >= 0 %}text-success{% else %}text-warning{% endif %}">
-                {% if performance.mtd_return >= 0 %}+{% endif %}{{ "%.1f"|format(performance.mtd_return) }}%
-            </div>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
-            <div class="text-sm text-gray-500 dark:text-gray-400">Total Return</div>
-            <div class="text-2xl font-bold {% if performance.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Period Return</div>
+            <div id="metric-period-return" class="text-2xl font-bold {% if performance.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
                 {% if performance.total_return >= 0 %}+{% endif %}{{ "%.1f"|format(performance.total_return) }}%
             </div>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Ann. Return</div>
+            <div id="metric-annual-return" class="text-2xl font-bold {% if performance.annual_return >= 0 %}text-success{% else %}text-warning{% endif %}">
+                {% if performance.annual_return >= 0 %}+{% endif %}{{ "%.1f"|format(performance.annual_return) }}%
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
+            <div class="text-sm text-gray-500 dark:text-gray-400">vs SPY</div>
+            <div id="metric-vs-spy" class="text-2xl font-bold {% if performance.total_return - vs_benchmark.spy_total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
+                {% if performance.total_return - vs_benchmark.spy_total_return >= 0 %}+{% endif %}{{ "%.1f"|format(performance.total_return - vs_benchmark.spy_total_return) }}%
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
             <div class="text-sm text-gray-500 dark:text-gray-400">Sharpe Ratio</div>
-            <div class="text-2xl font-bold text-navy dark:text-white">{{ "%.2f"|format(performance.sharpe) }}</div>
+            <div id="metric-sharpe" class="text-2xl font-bold text-navy dark:text-white">{{ "%.2f"|format(performance.sharpe) }}</div>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
             <div class="text-sm text-gray-500 dark:text-gray-400">Max Drawdown</div>
-            <div class="text-2xl font-bold text-warning">{{ "%.1f"|format(performance.max_drawdown) }}%</div>
+            <div id="metric-max-dd" class="text-2xl font-bold text-warning">{{ "%.1f"|format(performance.max_drawdown) }}%</div>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
             <div class="text-sm text-gray-500 dark:text-gray-400">Win Rate</div>
-            <div class="text-2xl font-bold text-navy dark:text-white">{{ "%.1f"|format(performance.win_rate) }}%</div>
+            <div id="metric-win-rate" class="text-2xl font-bold text-navy dark:text-white">{{ "%.1f"|format(performance.win_rate) }}%</div>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
             <div class="text-sm text-gray-500 dark:text-gray-400">Volatility</div>
-            <div class="text-2xl font-bold text-navy dark:text-white">{{ "%.1f"|format(performance.volatility) }}%</div>
+            <div id="metric-volatility" class="text-2xl font-bold text-navy dark:text-white">{{ "%.1f"|format(performance.volatility) }}%</div>
         </div>
     </div>
 
@@ -359,6 +359,76 @@
         }
     });
 
+    // Calculate period statistics from filtered data
+    function calculatePeriodStats(values, spyValues, drawdowns, indices) {
+        if (indices.length < 2) return null;
+
+        const startVal = values[indices[0]];
+        const endVal = values[indices[indices.length - 1]];
+        const spyStartVal = spyValues[indices[0]] || startVal;
+        const spyEndVal = spyValues[indices[indices.length - 1]] || endVal;
+
+        // Period return
+        const periodReturn = ((endVal / startVal) - 1) * 100;
+        const spyPeriodReturn = ((spyEndVal / spyStartVal) - 1) * 100;
+        const vsSpy = periodReturn - spyPeriodReturn;
+
+        // Calculate daily returns for the period
+        const dailyReturns = [];
+        for (let i = 1; i < indices.length; i++) {
+            const prevIdx = indices[i - 1];
+            const currIdx = indices[i];
+            const dailyRet = (values[currIdx] / values[prevIdx]) - 1;
+            dailyReturns.push(dailyRet);
+        }
+
+        // Win rate
+        const winningDays = dailyReturns.filter(r => r > 0).length;
+        const winRate = (winningDays / dailyReturns.length) * 100;
+
+        // Volatility (annualized)
+        const mean = dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length;
+        const variance = dailyReturns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / dailyReturns.length;
+        const dailyVol = Math.sqrt(variance);
+        const annualVol = dailyVol * Math.sqrt(252) * 100;
+
+        // Annualized return
+        const tradingDays = indices.length;
+        const years = tradingDays / 252;
+        const annualReturn = (Math.pow(endVal / startVal, 1 / years) - 1) * 100;
+
+        // Sharpe ratio (assuming 0 risk-free rate for simplicity)
+        const sharpe = annualVol > 0 ? annualReturn / annualVol : 0;
+
+        // Max drawdown for the period
+        const periodDrawdowns = indices.map(i => drawdowns[i]);
+        const maxDrawdown = Math.min(...periodDrawdowns);
+
+        return {
+            periodReturn,
+            annualReturn,
+            vsSpy,
+            sharpe,
+            maxDrawdown,
+            winRate,
+            volatility: annualVol
+        };
+    }
+
+    // Update metric display with color coding
+    function updateMetric(elementId, value, suffix = '%', decimals = 1, colorCode = true) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+
+        const formatted = (value >= 0 ? '+' : '') + value.toFixed(decimals) + suffix;
+        el.textContent = formatted;
+
+        if (colorCode) {
+            el.classList.remove('text-success', 'text-warning');
+            el.classList.add(value >= 0 ? 'text-success' : 'text-warning');
+        }
+    }
+
     // Update chart based on period selection
     function updateChart(period) {
         const indices = filterByPeriod(period);
@@ -380,6 +450,28 @@
         drawdownChart.data.labels = filteredLabels;
         drawdownChart.data.datasets[0].data = filteredDrawdowns;
         drawdownChart.update();
+
+        // Calculate and update summary stats
+        const stats = calculatePeriodStats(fullValues, fullSpyValues, fullDrawdowns, indices);
+        if (stats) {
+            updateMetric('metric-period-return', stats.periodReturn);
+            updateMetric('metric-annual-return', stats.annualReturn);
+            updateMetric('metric-vs-spy', stats.vsSpy);
+            updateMetric('metric-sharpe', stats.sharpe, '', 2, false);
+            updateMetric('metric-max-dd', stats.maxDrawdown, '%', 1, false);
+            updateMetric('metric-win-rate', stats.winRate, '%', 1, false);
+            updateMetric('metric-volatility', stats.volatility, '%', 1, false);
+
+            // Special handling for max drawdown (always red) and sharpe (no +/-)
+            const sharpeEl = document.getElementById('metric-sharpe');
+            if (sharpeEl) sharpeEl.textContent = stats.sharpe.toFixed(2);
+
+            const winRateEl = document.getElementById('metric-win-rate');
+            if (winRateEl) winRateEl.textContent = stats.winRate.toFixed(1) + '%';
+
+            const volEl = document.getElementById('metric-volatility');
+            if (volEl) volEl.textContent = stats.volatility.toFixed(1) + '%';
+        }
     }
 
     // Drawdown Chart
