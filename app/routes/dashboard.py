@@ -315,39 +315,8 @@ async def allocation_page(request: Request):
 
     positions_with_info.sort(key=lambda x: x['weight'], reverse=True)
 
-    # Calculate current exposure using same method as historical data
-    # (from QUAD_ALLOCATIONS with 50/50 split between top quadrants)
-    # This ensures apples-to-apples comparison for percentiles
-    equities = ['QQQ', 'ARKK', 'IWM', 'XLC', 'XLY', 'XLV', 'XLU', 'XLP', 'XLF', 'XLI', 'XLB', 'VTV', 'IWD',
-                'ARKX', 'BOTZ', 'EEM']
-    bonds = ['TLT', 'LQD', 'IEF', 'VGLT', 'MUB', 'TIP', 'VTIP']
-    commodities = ['GLD', 'DBC', 'XLE', 'XOP', 'FCG', 'USO', 'GCC', 'DBA', 'REMX', 'URA', 'LIT', 'PALL', 'VALT']
-    crypto = ['BTC-USD', 'ETH-USD']
-    real_assets = ['VNQ', 'PAVE']
-
-    # Combine allocations from current top quadrants (same as historical calc)
-    combined = {}
-    for quad in signals['top_quadrants']:
-        if quad in QUAD_ALLOCATIONS:
-            for ticker, weight in QUAD_ALLOCATIONS[quad].items():
-                combined[ticker] = combined.get(ticker, 0) + weight * 0.5
-
-    # Categorize into asset classes
-    current_exposure = {'Equities': 0, 'Bonds': 0, 'Commodities': 0, 'Crypto': 0, 'Real Assets': 0}
-    for ticker, weight in combined.items():
-        if ticker in equities:
-            current_exposure['Equities'] += weight
-        elif ticker in bonds:
-            current_exposure['Bonds'] += weight
-        elif ticker in commodities:
-            current_exposure['Commodities'] += weight
-        elif ticker in crypto:
-            current_exposure['Crypto'] += weight
-        elif ticker in real_assets:
-            current_exposure['Real Assets'] += weight
-
-    # Convert to percentages
-    current_exposure = {k: round(v * 100, 1) for k, v in current_exposure.items()}
+    # Current exposure from actual holdings (breakdown), not theoretical QUAD_ALLOCATIONS
+    current_exposure = {k: round(v * 100, 1) for k, v in breakdown.items() if v > 0}
 
     return templates.TemplateResponse("dashboard/allocation.html", {
         "request": request,
