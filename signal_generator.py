@@ -21,7 +21,7 @@ from config import QUAD_ALLOCATIONS
 
 # Quadrant indicators for momentum scoring
 QUAD_INDICATORS = {
-    'Q1': ['QQQ', 'VUG', 'IWM', 'BTC-USD'],
+    'Q1': ['QQQ', 'VUG', 'IWM'],
     'Q2': ['XLE', 'DBC'],
     'Q3': ['GLD', 'LIT'],
     'Q4': ['TLT', 'XLU', 'VIXY']

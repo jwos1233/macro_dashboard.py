@@ -61,18 +61,17 @@ MIN_EMA_FILTER = True  # Whether to use EMA filter
 CORE_ASSETS = {
     # Q1 Assets (Growth ↑, Inflation ↓)
     'QQQ': 'NASDAQ 100 (Growth)',
-    'VUG': 'Vanguard Growth ETF', 
+    'VUG': 'Vanguard Growth ETF',
     'IWM': 'Russell 2000 (Small Caps)',
-    'BTC-USD': 'Bitcoin (BTC)',
-    
+
     # Q2 Assets (Growth ↑, Inflation ↑)
     'XLE': 'Energy Sector ETF',
     'DBC': 'Broad Commodities ETF',
-    
+
     # Q3 Assets (Growth ↓, Inflation ↑)
     'GLD': 'Gold ETF',
     'LIT': 'Lithium & Battery Tech ETF',
-    
+
     # Q4 Assets (Growth ↓, Inflation ↓)
     'TLT': '20+ Year Treasury Bonds',
     'XLU': 'Utilities Sector ETF',
@@ -104,7 +103,7 @@ TRADING_ASSETS = {
 }
 
 # Trading Configuration
-TRADING_UNIVERSE = ['BTC']  # Only BTC as pure macro asset
+TRADING_UNIVERSE = []  # No crypto in backtest
 MAX_POSITION_SIZE = 0.5  # Maximum 50% of capital per position
 MIN_POSITION_SIZE = 0.1  # Minimum 10% of capital per position
 
@@ -152,10 +151,9 @@ LOG_FILE = "macro_quadrant_strategy.log"
 # Portfolio Allocations per Quadrant
 QUAD_ALLOCATIONS = {
     'Q1': {
-        'QQQ': 0.60 * 0.40,      # 40% of 60% Growth
-        'ARKK': 0.60 * 0.30,     # 30% of 60% Growth
-        'IWM': 0.60 * 0.15,      # 15% of 60% Growth (Small Caps)
-        'BTC-USD': 0.60 * 0.20,  # 20% of 60% Growth (Bitcoin - pure macro asset)
+        'QQQ': 0.60 * 0.45,      # 45% of 60% Growth
+        'ARKK': 0.60 * 0.35,     # 35% of 60% Growth
+        'IWM': 0.60 * 0.20,      # 20% of 60% Growth (Small Caps)
         'XLC': 0.15 * 0.50,      # 50% of 15% Consumer Disc
         'XLY': 0.15 * 0.50,      # 50% of 15% Consumer Disc
         'TLT': 0.10 * 0.50,      # 50% of 10% Bonds
@@ -215,7 +213,7 @@ QUAD_ALLOCATIONS = {
 
 # Quadrant indicator assets (for scoring)
 QUAD_INDICATORS = {
-    'Q1': ['QQQ', 'VUG', 'IWM', 'BTC-USD'],
+    'Q1': ['QQQ', 'VUG', 'IWM'],
     'Q2': ['XLE', 'DBC', 'GCC', 'LIT'],
     'Q3': ['GLD', 'DBC', 'DBA', 'REMX', 'URA', 'LIT'],
     'Q4': ['TLT', 'XLU', 'VIXY']

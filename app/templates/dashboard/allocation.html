@@ -8,7 +8,6 @@
     'QQQ': 'Nasdaq 100',
     'ARKK': 'ARK Innovation',
     'IWM': 'Russell 2000',
-    'BTC-USD': 'Bitcoin',
     'XLC': 'Communication Services',
     'XLY': 'Consumer Discretionary',
     'TLT': '20+ Year Treasury',
@@ -57,7 +56,6 @@
     'GLD': 'Commodities', 'DBC': 'Commodities', 'XLE': 'Commodities', 'XOP': 'Commodities', 'FCG': 'Commodities',
     'USO': 'Commodities', 'GCC': 'Commodities', 'DBA': 'Commodities', 'REMX': 'Commodities', 'URA': 'Commodities',
     'LIT': 'Commodities', 'PALL': 'Commodities', 'VALT': 'Commodities', 'SLV': 'Commodities',
-    'BTC-USD': 'Crypto',
     'VNQ': 'Real Assets', 'PAVE': 'Real Assets'
 } %}
 
@@ -111,7 +109,7 @@
 
             <!-- Breakdown List -->
             <div class="space-y-4">
-                {% set colors = {'Equities': '#0F4C75', 'Bonds': '#60A5FA', 'Commodities': '#D4A857', 'Crypto': '#8B5CF6', 'Real Assets': '#10B981', 'Cash': '#9CA3AF'} %}
+                {% set colors = {'Equities': '#0F4C75', 'Bonds': '#60A5FA', 'Commodities': '#D4A857', 'Real Assets': '#10B981', 'Cash': '#9CA3AF'} %}
                 {% for asset_class, weight in breakdown.items() %}
                     {% if weight > 0 %}
                     <div class="flex items-center justify-between">
@@ -190,8 +188,7 @@
                                 {% if category == 'Equities' %}bg-navy/10 text-navy
                                 {% elif category == 'Bonds' %}bg-blue-100 text-blue-700
                                 {% elif category == 'Commodities' %}bg-gold/10 text-gold-dark
-                                {% elif category == 'Crypto' %}bg-purple-100 text-purple-700
-                                {% elif category == 'Real Assets' %}bg-success/10 text-success
+                                {% elif category == 'Real Assets' %}bg-green-100 text-green-700
                                 {% else %}bg-gray-100 text-gray-700{% endif %}">
                                 {{ category }}
                             </span>
@@ -271,7 +268,6 @@
         'Equities': '#0F4C75',
         'Bonds': '#60A5FA',
         'Commodities': '#D4A857',
-        'Crypto': '#8B5CF6',
         'Real Assets': '#10B981',
         'Cash': '#9CA3AF'
     };
@@ -306,7 +302,7 @@
         const historyCtx = document.getElementById('historyChart').getContext('2d');
         const historyLabels = dailyData.map(d => d.date);
 
-        const assetClasses = ['Equities', 'Commodities', 'Crypto', 'Bonds', 'Real Assets'];
+        const assetClasses = ['Equities', 'Commodities', 'Bonds', 'Real Assets'];
 
         // Create stacked bar datasets
         const datasets = assetClasses.map(ac => ({
