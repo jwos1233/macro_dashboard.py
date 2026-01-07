@@ -29,3 +29,6 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# Data files (generated at runtime, persist across deploys)
+app/data/daily_notes.json
