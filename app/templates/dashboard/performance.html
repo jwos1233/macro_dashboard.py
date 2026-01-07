@@ -75,13 +75,23 @@
     </div>
 
     <!-- Equity Curve Chart -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6" x-data="{ period: 'all' }">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Equity Curve</h2>
-            <div class="flex gap-2">
-                <button @click="period = 'all'; updateChart('all')"
-                        :class="period === 'all' ? 'bg-navy text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'"
-                        class="px-3 py-1 text-sm rounded transition-colors">All</button>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6" x-data="{ period: '2y', viewMode: 'growth' }">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Growth of $10,000</h2>
+                <p class="text-xs text-gray-500">Comparison vs S&P 500 (SPY)</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <!-- View Mode Toggle -->
+                <div class="flex border border-gray-200 dark:border-gray-600 rounded overflow-hidden mr-2">
+                    <button @click="viewMode = 'growth'; updateChart(period)"
+                            :class="viewMode === 'growth' ? 'bg-navy text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'"
+                            class="px-2 py-1 text-xs transition-colors">$10k</button>
+                    <button @click="viewMode = 'percent'; updateChart(period)"
+                            :class="viewMode === 'percent' ? 'bg-navy text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'"
+                            class="px-2 py-1 text-xs transition-colors">%</button>
+                </div>
+                <!-- Period Buttons -->
                 <button @click="period = '2y'; updateChart('2y')"
                         :class="period === '2y' ? 'bg-navy text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'"
                         class="px-3 py-1 text-sm rounded transition-colors">2Y</button>
@@ -91,6 +101,9 @@
                 <button @click="period = '6m'; updateChart('6m')"
                         :class="period === '6m' ? 'bg-navy text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'"
                         class="px-3 py-1 text-sm rounded transition-colors">6M</button>
+                <button @click="period = 'all'; updateChart('all')"
+                        :class="period === 'all' ? 'bg-navy text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'"
+                        class="px-3 py-1 text-sm rounded transition-colors">All</button>
             </div>
         </div>
         <div class="h-80">
@@ -241,81 +254,105 @@
 
 {% block extra_scripts %}
 <script>
-    // Parse data from backtest
-    const fullEquityCurve = {{ equity_curve | tojson }};
-    const fullSpyCurve = {{ spy_curve | tojson }};
+    // Parse data from backtest - sampled (for 'all' period) and daily (for 2y and shorter)
+    const sampledEquityCurve = {{ equity_curve | tojson }};
+    const sampledSpyCurve = {{ spy_curve | tojson }};
+    const dailyEquityCurve = {{ equity_curve_daily | tojson }};
+    const dailySpyCurve = {{ spy_curve_daily | tojson }};
 
-    // Store full data for filtering
-    const fullLabels = fullEquityCurve.map(d => d.date);
-    const fullValues = fullEquityCurve.map(d => d.value);
-    const fullDrawdowns = fullEquityCurve.map(d => d.drawdown);
-    const fullSpyValues = fullSpyCurve.map(d => d.value);
+    // Current view mode: 'growth' ($10k) or 'percent' (%)
+    let currentViewMode = 'growth';
 
-    // Initial value for normalization
-    const initialValue = fullValues[0] || 50000;
-    const spyInitialValue = fullSpyValues[0] || 50000;
+    // Get appropriate data source based on period
+    function getDataForPeriod(period) {
+        // Use daily data for 2y and shorter, sampled for all
+        if (period === 'all') {
+            return {
+                equity: sampledEquityCurve,
+                spy: sampledSpyCurve
+            };
+        } else {
+            return {
+                equity: dailyEquityCurve,
+                spy: dailySpyCurve
+            };
+        }
+    }
 
     // Filter data by time period
-    function filterByPeriod(period) {
+    function filterByPeriod(data, period) {
         const now = new Date();
         let cutoffDate;
 
         switch(period) {
             case '6m':
-                cutoffDate = new Date(now.setMonth(now.getMonth() - 6));
+                cutoffDate = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
                 break;
             case '1y':
-                cutoffDate = new Date(now.setFullYear(now.getFullYear() - 1));
+                cutoffDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
                 break;
             case '2y':
-                cutoffDate = new Date(now.setFullYear(now.getFullYear() - 2));
+                cutoffDate = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate());
                 break;
             default: // 'all'
                 cutoffDate = new Date('1900-01-01');
         }
 
-        const indices = [];
-        fullLabels.forEach((dateStr, i) => {
-            if (new Date(dateStr) >= cutoffDate) {
-                indices.push(i);
+        const filtered = data.filter(d => new Date(d.date) >= cutoffDate);
+        return filtered;
+    }
+
+    // Align SPY data to equity dates
+    function alignSpyToEquity(equityData, spyData) {
+        const spyMap = {};
+        spyData.forEach(d => { spyMap[d.date] = d.value; });
+
+        // For each equity date, find the SPY value (or interpolate)
+        return equityData.map(eq => {
+            if (spyMap[eq.date]) {
+                return spyMap[eq.date];
             }
+            // Find closest prior SPY date
+            const eqDate = new Date(eq.date);
+            let closest = null;
+            for (const d of spyData) {
+                const spyDate = new Date(d.date);
+                if (spyDate <= eqDate) {
+                    closest = d.value;
+                }
+            }
+            return closest || 0;
         });
-
-        return indices;
     }
 
-    // Normalize values to percentage gain from period start (0% = starting point)
-    function normalizeFromStart(values, indices) {
-        if (indices.length === 0) return [];
-        const startVal = values[indices[0]];
-        return indices.map(i => (((values[i] / startVal) - 1) * 100).toFixed(1));
-    }
-
-    // Create the equity chart
+    // Create the equity chart - initialize with 2Y data
     const equityCtx = document.getElementById('equityChart').getContext('2d');
     let equityChart = new Chart(equityCtx, {
         type: 'line',
         data: {
-            labels: fullLabels,
+            labels: [],
             datasets: [
                 {
                     label: 'Epoch Macro',
-                    data: fullValues.map(v => (((v / initialValue) - 1) * 100).toFixed(1)),
+                    data: [],
                     borderColor: '#0F4C75',
                     backgroundColor: 'rgba(15, 76, 117, 0.1)',
                     fill: true,
-                    tension: 0.4,
+                    tension: 0.3,
                     borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
                 },
                 {
-                    label: 'SPY',
-                    data: fullSpyValues.map(v => (((v / spyInitialValue) - 1) * 100).toFixed(1)),
-                    borderColor: '#9CA3AF',
+                    label: 'S&P 500',
+                    data: [],
+                    borderColor: '#6B7280',
                     backgroundColor: 'transparent',
                     fill: false,
-                    tension: 0.4,
+                    tension: 0.3,
                     borderWidth: 2,
-                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
                 }
             ]
         },
@@ -333,7 +370,11 @@
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return `${context.dataset.label}: ${context.parsed.y}%`;
+                            if (currentViewMode === 'growth') {
+                                return `${context.dataset.label}: $${Number(context.parsed.y).toLocaleString()}`;
+                            } else {
+                                return `${context.dataset.label}: ${context.parsed.y > 0 ? '+' : ''}${context.parsed.y}%`;
+                            }
                         }
                     }
                 }
@@ -346,71 +387,72 @@
                     },
                     ticks: {
                         callback: function(value) {
-                            return value + '%';
+                            if (currentViewMode === 'growth') {
+                                return '$' + (value / 1000).toFixed(0) + 'k';
+                            } else {
+                                return value + '%';
+                            }
                         }
                     }
                 },
                 x: {
                     grid: {
                         display: false
+                    },
+                    ticks: {
+                        maxTicksLimit: 8
                     }
                 }
             }
         }
     });
 
-    // Calculate period statistics from filtered data
-    function calculatePeriodStats(values, spyValues, drawdowns, indices, labels) {
-        if (indices.length < 2) return null;
+    // Calculate period statistics
+    function calculatePeriodStats(equityData, spyValues) {
+        if (equityData.length < 2) return null;
 
-        const startVal = values[indices[0]];
-        const endVal = values[indices[indices.length - 1]];
-        const spyStartVal = spyValues[indices[0]] || startVal;
-        const spyEndVal = spyValues[indices[indices.length - 1]] || endVal;
+        const startVal = equityData[0].value;
+        const endVal = equityData[equityData.length - 1].value;
+        const spyStartVal = spyValues[0] || startVal;
+        const spyEndVal = spyValues[spyValues.length - 1] || endVal;
 
         // Period return
         const periodReturn = ((endVal / startVal) - 1) * 100;
         const spyPeriodReturn = ((spyEndVal / spyStartVal) - 1) * 100;
         const vsSpy = periodReturn - spyPeriodReturn;
 
-        // Calculate years from actual dates (not point count)
-        const startDate = new Date(labels[indices[0]]);
-        const endDate = new Date(labels[indices[indices.length - 1]]);
+        // Calculate years from actual dates
+        const startDate = new Date(equityData[0].date);
+        const endDate = new Date(equityData[equityData.length - 1].date);
         const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
         const years = (endDate - startDate) / msPerYear;
 
         // Annualized return (CAGR)
         const annualReturn = years > 0 ? (Math.pow(endVal / startVal, 1 / years) - 1) * 100 : periodReturn;
 
-        // Calculate returns between sampled points
-        const sampledReturns = [];
-        for (let i = 1; i < indices.length; i++) {
-            const prevIdx = indices[i - 1];
-            const currIdx = indices[i];
-            const ret = (values[currIdx] / values[prevIdx]) - 1;
-            sampledReturns.push(ret);
+        // Calculate daily returns
+        const dailyReturns = [];
+        for (let i = 1; i < equityData.length; i++) {
+            const ret = (equityData[i].value / equityData[i-1].value) - 1;
+            dailyReturns.push(ret);
         }
 
-        // Win rate (based on sampled intervals)
-        const winningPeriods = sampledReturns.filter(r => r > 0).length;
-        const winRate = (winningPeriods / sampledReturns.length) * 100;
+        // Win rate
+        const winningDays = dailyReturns.filter(r => r > 0).length;
+        const winRate = (winningDays / dailyReturns.length) * 100;
 
-        // Volatility - need to annualize based on sampling frequency
-        // Average days between samples
-        const avgDaysBetweenSamples = (years * 365.25) / (indices.length - 1);
-        const samplesPerYear = 365.25 / avgDaysBetweenSamples;
-
-        const mean = sampledReturns.reduce((a, b) => a + b, 0) / sampledReturns.length;
-        const variance = sampledReturns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / sampledReturns.length;
-        const sampleVol = Math.sqrt(variance);
-        const annualVol = sampleVol * Math.sqrt(samplesPerYear) * 100;
+        // Volatility (annualized)
+        const mean = dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length;
+        const variance = dailyReturns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / dailyReturns.length;
+        const dailyVol = Math.sqrt(variance);
+        const annualVol = dailyVol * Math.sqrt(252) * 100;
 
         // Sharpe ratio
         const sharpe = annualVol > 0 ? annualReturn / annualVol : 0;
 
         // Max drawdown for the period
-        const periodDrawdowns = indices.map(i => drawdowns[i]);
-        const maxDrawdown = Math.min(...periodDrawdowns);
+        const drawdowns = equityData.map(d => d.drawdown || 0);
+        const maxDrawdown = Math.min(...drawdowns);
 
         return {
             periodReturn,
@@ -437,30 +479,57 @@
         }
     }
 
-    // Update chart based on period selection
+    // Update chart based on period and view mode
     function updateChart(period) {
-        const indices = filterByPeriod(period);
-        const filteredLabels = indices.map(i => fullLabels[i]);
-        const filteredValues = indices.map(i => fullValues[i]);
-        const filteredSpyValues = indices.map(i => fullSpyValues[i] || 0);
-        const filteredDrawdowns = indices.map(i => fullDrawdowns[i]);
+        // Get view mode from Alpine state
+        const viewModeEl = document.querySelector('[x-data]');
+        if (viewModeEl && viewModeEl.__x) {
+            currentViewMode = viewModeEl.__x.$data.viewMode;
+        }
 
-        // Normalize from period start
-        const normalizedValues = normalizeFromStart(fullValues, indices);
-        const normalizedSpyValues = normalizeFromStart(fullSpyValues, indices);
+        // Get appropriate data source
+        const dataSource = getDataForPeriod(period);
+        const filteredEquity = filterByPeriod(dataSource.equity, period);
+        const filteredSpy = filterByPeriod(dataSource.spy, period);
 
-        equityChart.data.labels = filteredLabels;
-        equityChart.data.datasets[0].data = normalizedValues;
-        equityChart.data.datasets[1].data = normalizedSpyValues;
+        if (filteredEquity.length === 0) return;
+
+        // Align SPY to equity dates
+        const alignedSpyValues = alignSpyToEquity(filteredEquity, filteredSpy);
+
+        // Get labels and values
+        const labels = filteredEquity.map(d => d.date);
+        const equityValues = filteredEquity.map(d => d.value);
+        const drawdowns = filteredEquity.map(d => d.drawdown || 0);
+
+        // Calculate display values based on view mode
+        let displayEquity, displaySpy;
+        const startEquity = equityValues[0];
+        const startSpy = alignedSpyValues[0] || startEquity;
+
+        if (currentViewMode === 'growth') {
+            // Growth of $10k
+            displayEquity = equityValues.map(v => ((v / startEquity) * 10000).toFixed(0));
+            displaySpy = alignedSpyValues.map(v => ((v / startSpy) * 10000).toFixed(0));
+        } else {
+            // Percentage return
+            displayEquity = equityValues.map(v => (((v / startEquity) - 1) * 100).toFixed(1));
+            displaySpy = alignedSpyValues.map(v => (((v / startSpy) - 1) * 100).toFixed(1));
+        }
+
+        // Update equity chart
+        equityChart.data.labels = labels;
+        equityChart.data.datasets[0].data = displayEquity;
+        equityChart.data.datasets[1].data = displaySpy;
         equityChart.update();
 
-        // Also update drawdown chart
-        drawdownChart.data.labels = filteredLabels;
-        drawdownChart.data.datasets[0].data = filteredDrawdowns;
+        // Update drawdown chart
+        drawdownChart.data.labels = labels;
+        drawdownChart.data.datasets[0].data = drawdowns;
         drawdownChart.update();
 
         // Calculate and update summary stats
-        const stats = calculatePeriodStats(fullValues, fullSpyValues, fullDrawdowns, indices, fullLabels);
+        const stats = calculatePeriodStats(filteredEquity, alignedSpyValues);
         if (stats) {
             updateMetric('metric-period-return', stats.periodReturn);
             updateMetric('metric-annual-return', stats.annualReturn);
@@ -470,7 +539,7 @@
             updateMetric('metric-win-rate', stats.winRate, '%', 1, false);
             updateMetric('metric-volatility', stats.volatility, '%', 1, false);
 
-            // Special handling for max drawdown (always red) and sharpe (no +/-)
+            // Special handling for metrics without +/-
             const sharpeEl = document.getElementById('metric-sharpe');
             if (sharpeEl) sharpeEl.textContent = stats.sharpe.toFixed(2);
 
@@ -487,15 +556,17 @@
     let drawdownChart = new Chart(ddCtx, {
         type: 'line',
         data: {
-            labels: fullLabels,
+            labels: [],
             datasets: [{
-                label: 'Drawdown %',
-                data: fullDrawdowns,
-                borderColor: '#B91C1C',
-                backgroundColor: 'rgba(185, 28, 28, 0.2)',
+                label: 'Drawdown',
+                data: [],
+                borderColor: '#DC2626',
+                backgroundColor: 'rgba(220, 38, 38, 0.15)',
                 fill: true,
-                tension: 0.4,
-                borderWidth: 2,
+                tension: 0.3,
+                borderWidth: 1.5,
+                pointRadius: 0,
+                pointHoverRadius: 3,
             }]
         },
         options: {
@@ -504,6 +575,13 @@
             plugins: {
                 legend: {
                     display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Drawdown: ${context.parsed.y.toFixed(1)}%`;
+                        }
+                    }
                 }
             },
             scales: {
@@ -521,10 +599,18 @@
                 x: {
                     grid: {
                         display: false
+                    },
+                    ticks: {
+                        maxTicksLimit: 8
                     }
                 }
             }
         }
+    });
+
+    // Initialize with 2Y view
+    document.addEventListener('DOMContentLoaded', function() {
+        updateChart('2y');
     });
 </script>
 {% endblock %}
