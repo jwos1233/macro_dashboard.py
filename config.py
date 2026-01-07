@@ -104,7 +104,7 @@ TRADING_ASSETS = {
 }
 
 # Trading Configuration
-TRADING_UNIVERSE = ['BTC', 'ETH']  # Only BTC and ETH
+TRADING_UNIVERSE = ['BTC']  # Only BTC as pure macro asset
 MAX_POSITION_SIZE = 0.5  # Maximum 50% of capital per position
 MIN_POSITION_SIZE = 0.1  # Minimum 10% of capital per position
 
@@ -155,8 +155,7 @@ QUAD_ALLOCATIONS = {
         'QQQ': 0.60 * 0.40,      # 40% of 60% Growth
         'ARKK': 0.60 * 0.30,     # 30% of 60% Growth
         'IWM': 0.60 * 0.15,      # 15% of 60% Growth (Small Caps)
-        'BTC-USD': 0.60 * 0.10,  # 10% of 60% Growth (Bitcoin)
-        'ETH-USD': 0.60 * 0.10,  # 10% of 60% Growth (Ethereum)
+        'BTC-USD': 0.60 * 0.20,  # 20% of 60% Growth (Bitcoin - pure macro asset)
         'XLC': 0.15 * 0.50,      # 50% of 15% Consumer Disc
         'XLY': 0.15 * 0.50,      # 50% of 15% Consumer Disc
         'TLT': 0.10 * 0.50,      # 50% of 10% Bonds

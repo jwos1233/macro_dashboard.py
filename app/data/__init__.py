@@ -239,7 +239,7 @@ def run_live_backtest() -> Optional[dict]:
                             'ARKX', 'BOTZ', 'EEM']
                 bonds = ['TLT', 'LQD', 'IEF', 'VGLT', 'MUB', 'TIP', 'VTIP']
                 commodities = ['GLD', 'DBC', 'XLE', 'XOP', 'FCG', 'USO', 'GCC', 'DBA', 'REMX', 'URA', 'LIT', 'PALL', 'VALT']
-                crypto = ['BTC-USD', 'ETH-USD']  # Crypto
+                crypto = ['BTC-USD']  # Crypto (BTC only - pure macro asset)
                 real_assets = ['VNQ', 'PAVE']
 
                 def categorize_allocations(allocations):

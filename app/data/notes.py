@@ -87,7 +87,7 @@ def categorize_holdings(weights: dict) -> dict:
         'Duration (Short/TIPS)': ['TIP', 'VTIP', 'VALT'],
         'Credit (IG)': ['LQD', 'MUB'],
         'Real Assets': ['VNQ', 'PAVE'],
-        'Crypto': ['BTC-USD', 'ETH-USD']
+        'Crypto': ['BTC-USD']
     }
 
     # Reverse lookup
@@ -201,7 +201,7 @@ Category Mapping Reference:
 - Duration (Short/TIPS): TIP, VTIP, VALT
 - Credit (IG): LQD, MUB
 - Real Assets: VNQ, PAVE
-- Crypto: BTC-USD, ETH-USD
+- Crypto: BTC-USD
 
 Quadrant Definitions:
 - Q1 (Goldilocks): Growth↑, Inflation↓ – favor growth assets, duration, crypto
