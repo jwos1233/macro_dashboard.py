@@ -103,14 +103,25 @@ def run_live_backtest() -> Optional[dict]:
         # Build monthly returns with drawdown and sharpe
         monthly_returns = []
         monthly = portfolio_value.resample('M').last().pct_change().dropna()
+
+        # Determine current month to mark as incomplete
+        current_year = datetime.now().year
+        current_month = datetime.now().month
+
         for date, ret in monthly.tail(12).items():
             # Get daily returns for this month to calculate sharpe
             year, month = date.year, date.month
             month_data = portfolio_value[(portfolio_value.index.year == year) & (portfolio_value.index.month == month)]
             daily_returns = month_data.pct_change().dropna()
 
-            # Monthly Sharpe (annualized from daily)
-            if len(daily_returns) > 1 and daily_returns.std() > 0:
+            # Check if this is the current (incomplete) month
+            is_current_month = (year == current_year and month == current_month)
+
+            # Monthly Sharpe (annualized from daily) - only for complete months
+            if is_current_month:
+                monthly_sharpe = None  # Incomplete month - don't calculate
+            elif len(daily_returns) > 5 and daily_returns.std() > 0:
+                # Need at least 5 days of data for meaningful Sharpe
                 monthly_sharpe = (daily_returns.mean() / daily_returns.std()) * np.sqrt(252)
             else:
                 monthly_sharpe = 0
@@ -126,7 +137,7 @@ def run_live_backtest() -> Optional[dict]:
                 'month': date.strftime('%Y-%m'),
                 'return': round(float(ret * 100), 2),
                 'drawdown': round(float(month_dd), 1),
-                'sharpe': round(float(monthly_sharpe), 2)
+                'sharpe': round(float(monthly_sharpe), 2) if monthly_sharpe is not None else None
             })
         monthly_returns.reverse()
 
