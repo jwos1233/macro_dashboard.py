@@ -85,7 +85,8 @@ def run_live_backtest() -> Optional[dict]:
 
         # Build equity curve data
         equity_curve = []
-        spy_curve = []  # SPY benchmark curve
+        spy_curve = []  # SPY benchmark curve (sampled)
+        spy_curve_daily = []  # SPY benchmark curve (daily for 2yr)
         cummax = portfolio_value.expanding().max()
         drawdown = (portfolio_value - cummax) / cummax * 100
 
@@ -100,6 +101,18 @@ def run_live_backtest() -> Optional[dict]:
                     'value': round(float(portfolio_value.iloc[i]), 2),
                     'drawdown': round(float(drawdown.iloc[i]), 2)
                 })
+
+        # Build DAILY equity curve for last 2 years (for detailed performance view)
+        equity_curve_daily = []
+        two_years_ago = datetime.now() - timedelta(days=730)
+        for date in portfolio_value.index:
+            if date >= two_years_ago:
+                equity_curve_daily.append({
+                    'date': date.strftime('%Y-%m-%d'),
+                    'value': round(float(portfolio_value.loc[date]), 2),
+                    'drawdown': round(float(drawdown.loc[date]), 2)
+                })
+        print(f"Built daily equity curve with {len(equity_curve_daily)} points (2yr)", flush=True)
 
         # Build monthly returns with drawdown and sharpe
         monthly_returns = []
@@ -416,6 +429,29 @@ def run_live_backtest() -> Optional[dict]:
                         except Exception as e:
                             print(f"Error matching SPY date {sample_date}: {e}", flush=True)
                     print(f"Built SPY curve with {len(spy_curve)} points", flush=True)
+
+                    # Build DAILY SPY curve for last 2 years
+                    spy_curve_daily = []
+                    two_years_ago_spy = datetime.now() - timedelta(days=730)
+                    # Get SPY initial value for 2yr period
+                    spy_2yr_dates = [d for d in spy_dates if d >= two_years_ago_spy]
+                    if len(spy_2yr_dates) > 0:
+                        spy_2yr_initial_idx = spy_dates.get_indexer([spy_2yr_dates[0]], method='nearest')[0]
+                        spy_2yr_initial = float(spy_close.iloc[spy_2yr_initial_idx]) if spy_2yr_initial_idx >= 0 else spy_initial
+                        for spy_date in spy_2yr_dates:
+                            try:
+                                idx = spy_dates.get_indexer([spy_date], method='nearest')[0]
+                                if idx >= 0:
+                                    spy_val = float(spy_close.iloc[idx])
+                                    # Normalize to $10k starting point for "Growth of $10k" view
+                                    spy_normalized = (spy_val / spy_2yr_initial) * 10000
+                                    spy_curve_daily.append({
+                                        'date': spy_date.strftime('%Y-%m-%d'),
+                                        'value': round(spy_normalized, 2)
+                                    })
+                            except Exception as e:
+                                pass
+                        print(f"Built daily SPY curve with {len(spy_curve_daily)} points (2yr)", flush=True)
         except Exception as e:
             print(f"Could not fetch SPY data: {e}", flush=True)
 
@@ -445,6 +481,8 @@ def run_live_backtest() -> Optional[dict]:
             'regime_history': regime_history,
             'equity_curve': equity_curve,
             'spy_curve': spy_curve,
+            'equity_curve_daily': equity_curve_daily,
+            'spy_curve_daily': spy_curve_daily,
             'asset_class_history': asset_class_history,
             'asset_class_daily': asset_class_daily,
             'generated_at': datetime.now().isoformat()
@@ -540,6 +578,8 @@ def get_default_backtest_results() -> dict:
         "regime_history": [],
         "equity_curve": [],
         "spy_curve": [],
+        "equity_curve_daily": [],
+        "spy_curve_daily": [],
         "asset_class_history": [],
         "asset_class_daily": [],
         "generated_at": None

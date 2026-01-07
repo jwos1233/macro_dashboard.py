@@ -423,6 +423,8 @@ async def performance_page(request: Request):
         "vs_benchmark": benchmark,
         "equity_curve": backtest.get('equity_curve', []),
         "spy_curve": backtest.get('spy_curve', []),
+        "equity_curve_daily": backtest.get('equity_curve_daily', []),
+        "spy_curve_daily": backtest.get('spy_curve_daily', []),
         "quad_descriptions": QUADRANT_DESCRIPTIONS,
         "data_source": backtest.get('data_source', 'unknown'),
         "generated_at": backtest.get('generated_at'),

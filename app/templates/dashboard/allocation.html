@@ -402,7 +402,10 @@
 
         const percentileGrid = document.getElementById('percentileGrid');
         if (percentileGrid) {
-            assetClasses.forEach(ac => {
+            // Only show cards for asset classes with actual current holdings
+            const heldAssetClasses = assetClasses.filter(ac => (currentExposure[ac] || 0) > 0);
+
+            heldAssetClasses.forEach(ac => {
                 const historicalValues = dailyData.map(d => d[ac] || 0);
                 const current = currentExposure[ac] || 0;
                 const percentile = calculatePercentile(historicalValues, current);
