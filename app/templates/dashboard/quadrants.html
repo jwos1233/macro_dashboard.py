@@ -3,160 +3,390 @@
 {% block title %}Quadrants - Epoch Macro{% endblock %}
 
 {% block content %}
+{# Quadrant explanations #}
+{% set quadrant_info = {
+    'Q1': {
+        'name': 'Goldilocks',
+        'what_it_means': 'Growth is accelerating while inflation remains subdued. This is the ideal environment for risk assets — economic expansion drives corporate earnings higher while low inflation keeps monetary policy accommodative.',
+        'what_we_buy': [
+            {'category': 'Growth Equities', 'reason': 'Tech and growth stocks thrive as expanding earnings are valued higher in low-rate environments'},
+            {'category': 'Small Caps & Innovation', 'reason': 'Risk appetite favors higher-beta plays with maximum upside potential'},
+            {'category': 'Crypto (BTC, ETH)', 'reason': 'Digital assets benefit from risk-on sentiment and liquidity tailwinds'},
+            {'category': 'Long Duration Bonds', 'reason': 'Low inflation supports bond prices, providing portfolio ballast'}
+        ],
+        'color': 'success',
+        'bg_color': 'bg-success/10',
+        'border_color': 'border-success',
+        'text_color': 'text-success'
+    },
+    'Q2': {
+        'name': 'Reflation',
+        'what_it_means': 'Growth is accelerating alongside rising inflation. Economic expansion is robust, but prices are heating up — typically seen in early-cycle recoveries or commodity booms. Central banks may begin tightening.',
+        'what_we_buy': [
+            {'category': 'Commodities & Energy', 'reason': 'Hard assets and energy stocks outperform as demand exceeds supply'},
+            {'category': 'Cyclical Sectors', 'reason': 'Financials, industrials, and materials benefit from economic expansion'},
+            {'category': 'Value Equities', 'reason': 'Value outperforms growth as rates rise and discount growth earnings'},
+            {'category': 'Real Assets & EM', 'reason': 'Emerging markets and real estate benefit from global growth'}
+        ],
+        'color': 'gold',
+        'bg_color': 'bg-gold/10',
+        'border_color': 'border-gold',
+        'text_color': 'text-gold'
+    },
+    'Q3': {
+        'name': 'Stagflation',
+        'what_it_means': 'Growth is decelerating while inflation remains elevated. Economic expansion is slowing but prices continue rising, creating a challenging environment for traditional assets. This is the most difficult regime.',
+        'what_we_buy': [
+            {'category': 'Real Assets & Commodities', 'reason': 'Hard assets preserve purchasing power when inflation erodes currency value'},
+            {'category': 'Precious Metals (Gold, Silver)', 'reason': 'Traditional inflation hedge with safe-haven characteristics'},
+            {'category': 'Energy & Uranium', 'reason': 'Supply-constrained commodities benefit from persistent inflation'},
+            {'category': 'TIPS & Inflation Protection', 'reason': 'Inflation-linked bonds preserve real returns'}
+        ],
+        'color': 'warning',
+        'bg_color': 'bg-warning/10',
+        'border_color': 'border-warning',
+        'text_color': 'text-warning'
+    },
+    'Q4': {
+        'name': 'Deflation',
+        'what_it_means': 'Growth is decelerating alongside falling inflation. Economic contraction or slowdown with deflationary pressures — risk-off environment where capital preservation becomes paramount.',
+        'what_we_buy': [
+            {'category': 'Long Duration Treasuries', 'reason': 'Flight to safety drives bond prices higher as yields fall'},
+            {'category': 'Investment Grade Credit', 'reason': 'High-quality fixed income provides stable returns'},
+            {'category': 'Defensive Equities', 'reason': 'Utilities, staples, and healthcare offer stability in downturns'},
+            {'category': 'Cash Allocation', 'reason': 'Preserving capital for opportunities when conditions improve'}
+        ],
+        'color': 'navy',
+        'bg_color': 'bg-navy/10',
+        'border_color': 'border-navy',
+        'text_color': 'text-navy'
+    }
+} %}
+
 <div class="space-y-6">
-    <!-- Header -->
-    <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Macro Quadrants</h1>
-        <p class="text-gray-500 dark:text-gray-400 mt-1">
-            Regime detection and quadrant momentum analysis
-        </p>
-    </div>
-
-    <!-- Regime Indicator + Current Status -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- 4-Quadrant Grid -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-            <h2 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">Current Regime</h2>
-
-            <!-- 4-Quadrant Grid -->
-            <div class="grid grid-cols-2 gap-2 mb-4">
-                <!-- Q1: Goldilocks (top-right) -->
-                <div class="order-2 regime-quadrant rounded-lg p-4 text-center transition-all
-                            {% if 'Q1' in signals.top_quadrants %}active bg-success/20 border-2 border-success{% else %}bg-gray-100 dark:bg-gray-700{% endif %}">
-                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">Q1</div>
-                    <div class="text-sm font-semibold {% if 'Q1' in signals.top_quadrants %}text-success{% else %}text-gray-600 dark:text-gray-300{% endif %}">
-                        Goldilocks
-                    </div>
-                    <div class="text-lg font-bold {% if 'Q1' in signals.top_quadrants %}text-success{% else %}text-gray-400{% endif %}">
-                        {{ "%.1f"|format(signals.quadrant_scores['Q1']) }}%
+    <!-- Section 1: Current Regime Header (Compact Banner) -->
+    <div class="bg-navy text-white rounded-xl px-6 py-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-6">
+                <div>
+                    <span class="text-navy-light text-sm">Current Regime</span>
+                    <div class="text-xl font-bold">
+                        {{ signals.top_quadrants[0] }} + {{ signals.top_quadrants[1] }}
+                        <span class="font-normal text-gray-300 ml-2">
+                            ({{ quadrant_info[signals.top_quadrants[0]].name }} + {{ quadrant_info[signals.top_quadrants[1]].name }})
+                        </span>
                     </div>
                 </div>
-
-                <!-- Q2: Reflation (top-left) -->
-                <div class="order-1 regime-quadrant rounded-lg p-4 text-center transition-all
-                            {% if 'Q2' in signals.top_quadrants %}active bg-gold/20 border-2 border-gold{% else %}bg-gray-100 dark:bg-gray-700{% endif %}">
-                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">Q2</div>
-                    <div class="text-sm font-semibold {% if 'Q2' in signals.top_quadrants %}text-gold{% else %}text-gray-600 dark:text-gray-300{% endif %}">
-                        Reflation
-                    </div>
-                    <div class="text-lg font-bold {% if 'Q2' in signals.top_quadrants %}text-gold{% else %}text-gray-400{% endif %}">
-                        {{ "%.1f"|format(signals.quadrant_scores['Q2']) }}%
-                    </div>
-                </div>
-
-                <!-- Q3: Stagflation (bottom-left) -->
-                <div class="order-3 regime-quadrant rounded-lg p-4 text-center transition-all
-                            {% if 'Q3' in signals.top_quadrants %}active bg-warning/20 border-2 border-warning{% else %}bg-gray-100 dark:bg-gray-700{% endif %}">
-                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">Q3</div>
-                    <div class="text-sm font-semibold {% if 'Q3' in signals.top_quadrants %}text-warning{% else %}text-gray-600 dark:text-gray-300{% endif %}">
-                        Stagflation
-                    </div>
-                    <div class="text-lg font-bold {% if 'Q3' in signals.top_quadrants %}text-warning{% else %}text-gray-400{% endif %}">
-                        {{ "%.1f"|format(signals.quadrant_scores['Q3']) }}%
-                    </div>
-                </div>
-
-                <!-- Q4: Deflation (bottom-right) -->
-                <div class="order-4 regime-quadrant rounded-lg p-4 text-center transition-all
-                            {% if 'Q4' in signals.top_quadrants %}active bg-navy/20 border-2 border-navy{% else %}bg-gray-100 dark:bg-gray-700{% endif %}">
-                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">Q4</div>
-                    <div class="text-sm font-semibold {% if 'Q4' in signals.top_quadrants %}text-navy{% else %}text-gray-600 dark:text-gray-300{% endif %}">
-                        Deflation
-                    </div>
-                    <div class="text-lg font-bold {% if 'Q4' in signals.top_quadrants %}text-navy{% else %}text-gray-400{% endif %}">
-                        {{ "%.1f"|format(signals.quadrant_scores['Q4']) }}%
+                <div class="hidden sm:block border-l border-white/20 pl-6">
+                    <span class="text-navy-light text-sm">Since</span>
+                    <div class="font-semibold">
+                        {% if regime_history and regime_history[0] %}
+                            {{ regime_history[0].start }}
+                        {% else %}
+                            --
+                        {% endif %}
                     </div>
                 </div>
             </div>
-
-            <!-- Active Regime Badge -->
-            <div class="text-center">
-                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-navy text-white">
-                    Active: {{ signals.current_regime }}
-                </span>
+            <div class="flex items-center gap-4">
+                <div class="text-right">
+                    <span class="text-navy-light text-sm">Leverage</span>
+                    <div class="text-xl font-bold">{{ "%.1f"|format(signals.total_leverage) }}x</div>
+                </div>
             </div>
         </div>
+    </div>
 
-        <!-- Quadrant Descriptions -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-            <h2 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">Quadrant Definitions</h2>
-            <div class="space-y-4">
-                {% for quad in ['Q1', 'Q2', 'Q3', 'Q4'] %}
-                <div class="flex items-start gap-3 p-3 rounded-lg {% if quad in signals.top_quadrants %}bg-gray-50 dark:bg-gray-700{% endif %}">
-                    <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center
-                        {% if quad == 'Q1' %}bg-success/20 text-success
-                        {% elif quad == 'Q2' %}bg-gold/20 text-gold
-                        {% elif quad == 'Q3' %}bg-warning/20 text-warning
-                        {% else %}bg-navy/20 text-navy{% endif %}">
-                        <span class="font-bold">{{ quad }}</span>
-                    </div>
+    <!-- Section 2: Regime Cards (Two Cards, Side by Side) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {% for quad in signals.top_quadrants %}
+        {% set info = quadrant_info[quad] %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+            <!-- Card Header -->
+            <div class="px-6 py-4 {{ info.bg_color }} border-b-2 {{ info.border_color }}">
+                <div class="flex items-center justify-between">
                     <div>
-                        <div class="font-medium text-gray-900 dark:text-white">
-                            {% if quad == 'Q1' %}Goldilocks{% elif quad == 'Q2' %}Reflation{% elif quad == 'Q3' %}Stagflation{% else %}Deflation{% endif %}
+                        <span class="text-xs font-medium px-2 py-0.5 rounded-full
+                            {% if loop.index == 1 %}bg-navy text-white{% else %}bg-gray-600 text-white{% endif %}">
+                            {% if loop.index == 1 %}Primary{% else %}Secondary{% endif %}
+                        </span>
+                        <h2 class="text-xl font-bold mt-2 text-gray-900 dark:text-white">
+                            {{ quad }} - {{ info.name }}
+                        </h2>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-3xl font-bold {{ info.text_color }}">
+                            {{ "%.2f"|format(signals.quadrant_scores[quad]) }}%
                         </div>
-                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                            {{ quad_descriptions[quad] }}
+                        <div class="text-xs text-gray-500">Momentum</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <!-- What It Means -->
+                <div>
+                    <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                        What It Means
+                    </h3>
+                    <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+                        {{ info.what_it_means }}
+                    </p>
+                </div>
+
+                <hr class="border-gray-200 dark:border-gray-700">
+
+                <!-- What We Buy & Why -->
+                <div>
+                    <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+                        What We Buy & Why
+                    </h3>
+                    <ul class="space-y-3">
+                        {% for item in info.what_we_buy %}
+                        <li class="flex items-start gap-2">
+                            <span class="flex-shrink-0 w-1.5 h-1.5 rounded-full {{ info.bg_color }} {{ info.border_color }} border-2 mt-2"></span>
+                            <div>
+                                <span class="font-medium text-gray-900 dark:text-white text-sm">{{ item.category }}</span>
+                                <span class="text-gray-500 dark:text-gray-400 text-sm"> — {{ item.reason }}</span>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <hr class="border-gray-200 dark:border-gray-700">
+
+                <!-- Asset Universe -->
+                <div>
+                    <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+                        Asset Universe
+                    </h3>
+                    <div class="flex flex-wrap gap-2">
+                        {% for ticker in quad_allocations[quad].keys() %}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium
+                            bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300
+                            hover:{{ info.bg_color }} transition-colors">
+                            {{ ticker }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Section 3: Regime Timeline -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+        <h2 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
+            Regime History
+        </h2>
+
+        {% if regime_history %}
+        <!-- Timeline Visualization -->
+        <div class="relative mb-6">
+            <!-- Timeline track -->
+            <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full mb-4"></div>
+
+            <!-- Regime blocks -->
+            <div class="flex gap-2 overflow-x-auto pb-2">
+                {% for regime in regime_history|reverse %}
+                {% set q1 = regime.regime.split('+')[0] if regime.regime else 'Q1' %}
+                {% set q2 = regime.regime.split('+')[1] if regime.regime and '+' in regime.regime else 'Q1' %}
+                <div class="flex-shrink-0 text-center min-w-[100px]">
+                    <div class="rounded-lg p-3
+                        {% if q1 == 'Q1' %}bg-success/20 border border-success/40
+                        {% elif q1 == 'Q2' %}bg-gold/20 border border-gold/40
+                        {% elif q1 == 'Q3' %}bg-warning/20 border border-warning/40
+                        {% else %}bg-navy/20 border border-navy/40{% endif %}
+                        {% if loop.last %}ring-2 ring-navy{% endif %}">
+                        <div class="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                            {{ regime.regime }}
                         </div>
+                        <div class="text-lg font-bold mt-1
+                            {% if regime.return >= 0 %}text-success{% else %}text-warning{% endif %}">
+                            {% if regime.return >= 0 %}+{% endif %}{{ "%.1f"|format(regime.return) }}%
+                        </div>
+                        {% if regime.start and regime.end %}
+                        {% set start_date = regime.start %}
+                        {% set end_date = regime.end %}
+                        <div class="text-xs text-gray-500 mt-1">
+                            {{ regime.start[5:] }} to {{ regime.end[5:] }}
+                        </div>
+                        {% elif loop.last %}
+                        <div class="text-xs text-gray-500 mt-1">
+                            Now
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
             </div>
         </div>
-    </div>
 
-    <!-- Quadrant Momentum Scores Chart -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quadrant Momentum Scores</h2>
-        <div class="h-64">
-            <canvas id="quadrantChart"></canvas>
-        </div>
-    </div>
-
-    <!-- Quadrant Allocations -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {% for quad in ['Q1', 'Q2', 'Q3', 'Q4'] %}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6
-                    {% if quad in signals.top_quadrants %}ring-2 ring-gold{% endif %}">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="font-semibold text-gray-900 dark:text-white">
-                    {{ quad }} - {% if quad == 'Q1' %}Goldilocks{% elif quad == 'Q2' %}Reflation{% elif quad == 'Q3' %}Stagflation{% else %}Deflation{% endif %}
-                </h3>
-                {% if quad in signals.top_quadrants %}
-                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gold/10 text-gold-dark">
-                    Active
-                </span>
-                {% endif %}
+        <!-- Summary Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="text-center">
+                <div class="text-sm text-gray-500 dark:text-gray-400">Avg. Regime Duration</div>
+                <div class="text-lg font-semibold text-gray-900 dark:text-white">{{ avg_regime_duration }} days</div>
             </div>
-
-            <div class="text-3xl font-bold mb-2
-                {% if signals.quadrant_scores[quad] > 0 %}text-success{% else %}text-warning{% endif %}">
-                {{ "%.2f"|format(signals.quadrant_scores[quad]) }}%
+            <div class="text-center">
+                <div class="text-sm text-gray-500 dark:text-gray-400">Best Performing</div>
+                <div class="text-lg font-semibold text-success">
+                    {% if best_regime %}{{ best_regime.regime }} (+{{ "%.1f"|format(best_regime.return) }}%){% else %}--{% endif %}
+                </div>
             </div>
-            <div class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                {{ quad_descriptions[quad] }}
-            </div>
-
-            <!-- Assets in this quadrant -->
-            <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
-                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">ASSETS</div>
-                <div class="flex flex-wrap gap-2">
-                    {% for ticker in quad_allocations[quad].keys() %}
-                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                        {{ ticker }}
-                    </span>
-                    {% endfor %}
+            <div class="text-center">
+                <div class="text-sm text-gray-500 dark:text-gray-400">Worst Performing</div>
+                <div class="text-lg font-semibold text-warning">
+                    {% if worst_regime %}{{ worst_regime.regime }} ({{ "%.1f"|format(worst_regime.return) }}%){% else %}--{% endif %}
                 </div>
             </div>
         </div>
-        {% endfor %}
+        {% else %}
+        <div class="text-center py-8 text-gray-500">
+            Regime history not available. Run backtest to generate data.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Section 4: Rolling Quadrant Momentum -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Quadrant Momentum Scores
+            </h2>
+        </div>
+
+        <div class="h-64 mb-6">
+            <canvas id="momentumChart"></canvas>
+        </div>
+
+        <!-- Current Momentum Summary -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            {% for quad in ['Q1', 'Q2', 'Q3', 'Q4'] %}
+            {% set info = quadrant_info[quad] %}
+            {% set score = signals.quadrant_scores[quad] %}
+            <div class="flex items-center gap-3">
+                <div class="w-3 h-3 rounded-full
+                    {% if quad == 'Q1' %}bg-success
+                    {% elif quad == 'Q2' %}bg-gold
+                    {% elif quad == 'Q3' %}bg-warning
+                    {% else %}bg-navy{% endif %}"></div>
+                <div>
+                    <div class="text-sm font-medium text-gray-900 dark:text-white">
+                        {{ quad }} {{ info.name }}
+                    </div>
+                    <div class="text-sm {% if score >= 0 %}text-success{% else %}text-warning{% endif %}">
+                        {% if score >= 0 %}+{% endif %}{{ "%.2f"|format(score) }}%
+                        {% if quad in signals.top_quadrants %}
+                        <span class="text-gray-500">(active)</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Section 5: Full Framework Reference (Collapsible) -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        <button onclick="toggleFramework()"
+            class="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <h2 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                The Quadrant Framework
+            </h2>
+            <svg id="frameworkChevron" class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+        </button>
+
+        <div id="frameworkContent" class="hidden px-6 pb-6">
+            <!-- 2x2 Grid -->
+            <div class="max-w-2xl mx-auto">
+                <!-- Axis Labels -->
+                <div class="text-center mb-2">
+                    <span class="text-sm text-gray-500">Growth ↑</span>
+                </div>
+
+                <div class="flex items-center">
+                    <!-- Left Label -->
+                    <div class="w-24 text-right pr-4">
+                        <span class="text-sm text-gray-500">Inflation ↓</span>
+                    </div>
+
+                    <!-- Grid -->
+                    <div class="flex-1 grid grid-cols-2 gap-2">
+                        <!-- Q1 - Top Left -->
+                        <div class="bg-success/10 border border-success/40 rounded-lg p-4 text-center
+                            {% if 'Q1' in signals.top_quadrants %}ring-2 ring-success{% endif %}">
+                            <div class="font-bold text-success">Q1 Goldilocks</div>
+                            <div class="text-xs text-gray-500 mt-1">Risk-On</div>
+                            <div class="text-xs text-gray-400 mt-2">Growth ↑ Inflation ↓</div>
+                        </div>
+
+                        <!-- Q2 - Top Right -->
+                        <div class="bg-gold/10 border border-gold/40 rounded-lg p-4 text-center
+                            {% if 'Q2' in signals.top_quadrants %}ring-2 ring-gold{% endif %}">
+                            <div class="font-bold text-gold">Q2 Reflation</div>
+                            <div class="text-xs text-gray-500 mt-1">Commodity Bull</div>
+                            <div class="text-xs text-gray-400 mt-2">Growth ↑ Inflation ↑</div>
+                        </div>
+
+                        <!-- Q4 - Bottom Left -->
+                        <div class="bg-navy/10 border border-navy/40 rounded-lg p-4 text-center
+                            {% if 'Q4' in signals.top_quadrants %}ring-2 ring-navy{% endif %}">
+                            <div class="font-bold text-navy">Q4 Deflation</div>
+                            <div class="text-xs text-gray-500 mt-1">Risk-Off</div>
+                            <div class="text-xs text-gray-400 mt-2">Growth ↓ Inflation ↓</div>
+                        </div>
+
+                        <!-- Q3 - Bottom Right -->
+                        <div class="bg-warning/10 border border-warning/40 rounded-lg p-4 text-center
+                            {% if 'Q3' in signals.top_quadrants %}ring-2 ring-warning{% endif %}">
+                            <div class="font-bold text-warning">Q3 Stagflation</div>
+                            <div class="text-xs text-gray-500 mt-1">Real Assets</div>
+                            <div class="text-xs text-gray-400 mt-2">Growth ↓ Inflation ↑</div>
+                        </div>
+                    </div>
+
+                    <!-- Right Label -->
+                    <div class="w-24 text-left pl-4">
+                        <span class="text-sm text-gray-500">Inflation ↑</span>
+                    </div>
+                </div>
+
+                <!-- Bottom Label -->
+                <div class="text-center mt-2">
+                    <span class="text-sm text-gray-500">Growth ↓</span>
+                </div>
+            </div>
+
+            <!-- Framework Explanation -->
+            <div class="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <p class="text-sm text-gray-600 dark:text-gray-300">
+                    The quadrant framework uses relative momentum of growth-sensitive vs. inflation-sensitive assets
+                    to determine the current macro regime. We allocate to the top 2 quadrants by momentum score,
+                    rotating assets as conditions change.
+                </p>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-    // Quadrant Scores Bar Chart
-    const ctx = document.getElementById('quadrantChart').getContext('2d');
+    // Toggle framework visibility
+    function toggleFramework() {
+        const content = document.getElementById('frameworkContent');
+        const chevron = document.getElementById('frameworkChevron');
+        content.classList.toggle('hidden');
+        chevron.classList.toggle('rotate-180');
+    }
+
+    // Momentum Bar Chart
+    const ctx = document.getElementById('momentumChart').getContext('2d');
 
     const scores = {
         'Q1': {{ signals.quadrant_scores['Q1'] }},
@@ -167,6 +397,14 @@
 
     const topQuads = ['{{ signals.top_quadrants[0] }}', '{{ signals.top_quadrants[1] }}'];
 
+    // Define colors
+    const colors = {
+        Q1: { active: '#059669', inactive: '#059669' + '40' },  // success
+        Q2: { active: '#D4A857', inactive: '#D4A857' + '40' },  // gold
+        Q3: { active: '#B91C1C', inactive: '#B91C1C' + '40' },  // warning
+        Q4: { active: '#0F4C75', inactive: '#0F4C75' + '40' }   // navy
+    };
+
     new Chart(ctx, {
         type: 'bar',
         data: {
@@ -175,11 +413,21 @@
                 label: 'Momentum Score (%)',
                 data: [scores.Q1, scores.Q2, scores.Q3, scores.Q4],
                 backgroundColor: [
-                    topQuads.includes('Q1') ? '#059669' : '#9CA3AF',
-                    topQuads.includes('Q2') ? '#D4A857' : '#9CA3AF',
-                    topQuads.includes('Q3') ? '#B91C1C' : '#9CA3AF',
-                    topQuads.includes('Q4') ? '#0F4C75' : '#9CA3AF',
+                    topQuads.includes('Q1') ? colors.Q1.active : colors.Q1.inactive,
+                    topQuads.includes('Q2') ? colors.Q2.active : colors.Q2.inactive,
+                    topQuads.includes('Q3') ? colors.Q3.active : colors.Q3.inactive,
+                    topQuads.includes('Q4') ? colors.Q4.active : colors.Q4.inactive,
                 ],
+                borderColor: [
+                    colors.Q1.active,
+                    colors.Q2.active,
+                    colors.Q3.active,
+                    colors.Q4.active,
+                ],
+                borderWidth: topQuads.map((_, i) => {
+                    const quad = ['Q1', 'Q2', 'Q3', 'Q4'][i];
+                    return topQuads.includes(quad) ? 2 : 1;
+                }),
                 borderRadius: 8,
             }]
         },
@@ -189,13 +437,28 @@
             plugins: {
                 legend: {
                     display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed.y;
+                            const quad = ['Q1', 'Q2', 'Q3', 'Q4'][context.dataIndex];
+                            const isActive = topQuads.includes(quad);
+                            return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%${isActive ? ' (Active)' : ''}`;
+                        }
+                    }
                 }
             },
             scales: {
                 y: {
-                    beginAtZero: true,
+                    beginAtZero: false,
                     grid: {
                         color: 'rgba(0,0,0,0.05)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
                     }
                 },
                 x: {
