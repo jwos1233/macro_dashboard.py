@@ -247,6 +247,9 @@ async def signals_page(request: Request):
     """Full signals/momentum table page"""
     signals = get_signals()
 
+    # Calculate asset class breakdown
+    breakdown = calculate_asset_class_breakdown(signals['target_weights'])
+
     # Get all positions sorted by weight
     all_positions = sorted(
         signals['target_weights'].items(),
@@ -266,6 +269,7 @@ async def signals_page(request: Request):
         "request": request,
         "page": "signals",
         "signals": signals,
+        "breakdown": breakdown,
         "all_positions": all_positions,
         "ticker_quads": ticker_quads,
         "quad_descriptions": QUADRANT_DESCRIPTIONS,
