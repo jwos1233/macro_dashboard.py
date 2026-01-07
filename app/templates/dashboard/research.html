@@ -81,10 +81,8 @@
 
             <!-- Expanded Content -->
             <div x-show="expanded" x-transition class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <div class="prose dark:prose-invert max-w-none text-sm">
-                    {% for paragraph in note.content.split('\n\n') %}
-                    <p class="text-gray-600 dark:text-gray-300 mb-3">{{ paragraph }}</p>
-                    {% endfor %}
+                <div class="prose dark:prose-invert max-w-none text-sm note-content">
+                    {{ note.content | safe }}
                 </div>
                 {% if note.generated_at %}
                 <div class="mt-4 text-xs text-gray-400">
@@ -165,7 +163,23 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<!-- Marked.js for Markdown rendering -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
+    // Configure marked for safe rendering
+    marked.setOptions({
+        breaks: true,
+        gfm: true
+    });
+
+    // Render markdown content on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.note-content').forEach(function(el) {
+            const rawContent = el.textContent;
+            el.innerHTML = marked.parse(rawContent);
+        });
+    });
+
     async function generateNote(el) {
         const component = Alpine.$data(el.closest('[x-data]'));
         component.generating = true;
