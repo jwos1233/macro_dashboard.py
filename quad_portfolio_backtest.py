@@ -10,7 +10,7 @@ Key Features:
 - 30-day volatility lookback (optimal for responsiveness vs stability)
 - 50-day EMA trend filter (only allocate to assets above EMA)
 - Event-driven rebalancing (quad change or EMA crossover)
-- UNIFORM leverage: All quads get 150% (1.5x) exposure
+- ASYMMETRIC leverage: Q1=2x (Goldilocks), Q2/Q3/Q4=1x
 - ENTRY CONFIRMATION: 1-day lag using CURRENT/TODAY's EMA (not lagged)
 - 5% MINIMUM DELTA: Only rebalance if position changes > 5%
 - REALISTIC EXECUTION: Trade at next day's open (accounts for gap risk)
@@ -42,8 +42,8 @@ from datetime import datetime, timedelta
 from config import QUAD_ALLOCATIONS, QUADRANT_DESCRIPTIONS
 
 # Backtest leverage controls
-BASE_QUAD_LEVERAGE = 1.5       # 1.5x exposure for all quads
-Q1_LEVERAGE_MULTIPLIER = 1.0   # Q1 gets same as base (1.5x) - no extra boost
+BASE_QUAD_LEVERAGE = 1.0       # 1x exposure for Q2/Q3/Q4
+Q1_LEVERAGE_MULTIPLIER = 2.0   # Q1 gets 2x (risk-on Goldilocks regime)
 
 # Manual overrides for assets that must be fetched even if not in current
 # allocation map (keeps backtests aligned with latest production universe).
@@ -194,7 +194,7 @@ class QuadrantPortfolioBacktest:
             # Process each quad separately with volatility weighting
             final_weights = {}
             
-            # UNIFORM LEVERAGE: 1.5x base exposure for all quads
+            # ASYMMETRIC LEVERAGE: Q1=2x, Q2/Q3/Q4=1x
             for quad in (top1, top2):
                 quad_weight = BASE_QUAD_LEVERAGE
                 if quad == 'Q1':
@@ -739,7 +739,7 @@ if __name__ == "__main__":
     print(f"EMA Trend Filter: {EMA_PERIOD}-day")
     print(f"Volatility Lookback: {VOL_LOOKBACK} days")
     print(f"Backtest Period: ~{BACKTEST_YEARS} years")
-    print(f"Leverage: UNIFORM (All Quads=150%)")
+    print(f"Leverage: ASYMMETRIC (Q1=2x, Q2/Q3/Q4=1x)")
     print(f"Entry Confirmation: 1-day lag using live EMA")
     print("=" * 70)
     print()
@@ -784,5 +784,5 @@ if __name__ == "__main__":
     print("  - Quad signals: T-1 lag (prevent forward-looking bias)")
     print("  - Entry confirmation: T+0 (live EMA filter)")
     print("  - Volatility chasing: 30-day lookback")
-    print("  - Uniform leverage: All quads=1.5x")
+    print("  - Asymmetric leverage: Q1=2x, Q2/Q3/Q4=1x")
     print("=" * 70)
