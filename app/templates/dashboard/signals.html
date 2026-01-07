@@ -4,33 +4,46 @@
 
 {% block content %}
 <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Overview</h1>
-            <p class="text-gray-500 dark:text-gray-400 mt-1">
-                Current regime: <span class="font-medium text-navy dark:text-gold">{{ signals.current_regime }}</span>
+    <!-- Active Quadrants Header -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for quad in signals.top_quadrants %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 ring-2 ring-gold/30">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                {{ quad }} - {% if quad == 'Q1' %}Goldilocks{% elif quad == 'Q2' %}Reflation{% elif quad == 'Q3' %}Stagflation{% else %}Deflation{% endif %}
+            </h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                {{ quad_descriptions[quad] }}
             </p>
-        </div>
 
-        <!-- Filter Controls -->
-        <div class="flex gap-2">
-            <select id="quadFilter" onchange="filterTable()"
-                    class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
-                <option value="all">All Quadrants</option>
-                <option value="Q1">Q1 - Goldilocks</option>
-                <option value="Q2">Q2 - Reflation</option>
-                <option value="Q3">Q3 - Stagflation</option>
-                <option value="Q4">Q4 - Deflation</option>
-            </select>
-
-            <select id="signalFilter" onchange="filterTable()"
-                    class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
-                <option value="all">All Signals</option>
-                <option value="long">Long Only</option>
-                <option value="neutral">Neutral</option>
-            </select>
+            <div class="text-sm text-gray-600 dark:text-gray-300">
+                <div class="font-medium mb-2">Assets in this quadrant:</div>
+                <div class="flex flex-wrap gap-2">
+                    {% for ticker in quad_allocations[quad].keys() %}
+                    <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">{{ ticker }}</span>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
+        {% endfor %}
+    </div>
+
+    <!-- Filter Controls -->
+    <div class="flex justify-end gap-2">
+        <select id="quadFilter" onchange="filterTable()"
+                class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+            <option value="all">All Quadrants</option>
+            <option value="Q1">Q1 - Goldilocks</option>
+            <option value="Q2">Q2 - Reflation</option>
+            <option value="Q3">Q3 - Stagflation</option>
+            <option value="Q4">Q4 - Deflation</option>
+        </select>
+
+        <select id="signalFilter" onchange="filterTable()"
+                class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+            <option value="all">All Signals</option>
+            <option value="long">Long Only</option>
+            <option value="neutral">Neutral</option>
+        </select>
     </div>
 
     <!-- Asset Allocation Bar -->
