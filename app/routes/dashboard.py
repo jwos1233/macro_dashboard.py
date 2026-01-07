@@ -242,6 +242,39 @@ async def overview(request: Request):
 async def quadrants_page(request: Request):
     """Quadrant analysis and regime detection page"""
     signals = get_signals()
+    backtest = load_backtest_results()
+
+    # Get regime history for timeline
+    regime_history = backtest.get('regime_history', [])
+
+    # Calculate average regime duration from history
+    total_days = 0
+    regime_count = 0
+    for regime in regime_history:
+        if regime.get('start') and regime.get('end'):
+            try:
+                start = datetime.strptime(regime['start'], '%Y-%m-%d')
+                end = datetime.strptime(regime['end'], '%Y-%m-%d')
+                days = (end - start).days
+                total_days += days
+                regime_count += 1
+            except:
+                pass
+    avg_regime_duration = round(total_days / regime_count) if regime_count > 0 else 0
+
+    # Find best and worst performing regimes
+    best_regime = None
+    worst_regime = None
+    best_return = float('-inf')
+    worst_return = float('inf')
+    for regime in regime_history:
+        ret = regime.get('return', 0)
+        if ret > best_return:
+            best_return = ret
+            best_regime = regime
+        if ret < worst_return:
+            worst_return = ret
+            worst_regime = regime
 
     return templates.TemplateResponse("dashboard/quadrants.html", {
         "request": request,
@@ -249,6 +282,10 @@ async def quadrants_page(request: Request):
         "signals": signals,
         "quad_descriptions": QUADRANT_DESCRIPTIONS,
         "quad_allocations": QUAD_ALLOCATIONS,
+        "regime_history": regime_history,
+        "avg_regime_duration": avg_regime_duration,
+        "best_regime": best_regime,
+        "worst_regime": worst_regime,
     })
 
 
