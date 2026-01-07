@@ -86,8 +86,7 @@ def categorize_holdings(weights: dict) -> dict:
         'Duration (Long)': ['TLT', 'VGLT', 'IEF'],
         'Duration (Short/TIPS)': ['TIP', 'VTIP', 'VALT'],
         'Credit (IG)': ['LQD', 'MUB'],
-        'Real Assets': ['VNQ', 'PAVE'],
-        'Crypto': ['BTC-USD']
+        'Real Assets': ['VNQ', 'PAVE']
     }
 
     # Reverse lookup
@@ -201,12 +200,11 @@ Category Mapping Reference:
 - Duration (Short/TIPS): TIP, VTIP, VALT
 - Credit (IG): LQD, MUB
 - Real Assets: VNQ, PAVE
-- Crypto: BTC-USD
 
 Quadrant Definitions:
-- Q1 (Goldilocks): Growth↑, Inflation↓ – favor growth assets, duration, crypto
+- Q1 (Goldilocks): Growth↑, Inflation↓ – favor growth assets, duration
 - Q2 (Reflation): Growth↑, Inflation↑ – favor commodities, cyclicals, real assets, energy
-- Q3 (Stagflation): Growth↓, Inflation↑ – favor energy, commodities, TIPS, defensives, crypto
+- Q3 (Stagflation): Growth↓, Inflation↑ – favor energy, commodities, TIPS, defensives
 - Q4 (Deflation): Growth↓, Inflation↓ – favor long duration, IG credit, defensives, USD
 
 Content Structure:
@@ -239,7 +237,6 @@ Weave together insights on:
 - Equities – Sector rotation themes, growth vs value vs cyclicals vs defensives
 - Commodities – Energy, metals, ags dynamics; real rates impact
 - Credit – IG vs HY, spread dynamics
-- Crypto – Regime context, correlation dynamics
 
 **Portfolio Positioning vs. Consensus**
 Analyze the portfolio against sell-side themes:

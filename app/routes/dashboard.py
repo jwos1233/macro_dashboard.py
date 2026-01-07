@@ -169,14 +169,12 @@ def calculate_asset_class_breakdown(weights: dict) -> dict:
                 'ARKX', 'BOTZ', 'EEM']
     bonds = ['TLT', 'LQD', 'IEF', 'VGLT', 'MUB', 'TIP', 'VTIP']
     commodities = ['GLD', 'DBC', 'XLE', 'XOP', 'FCG', 'USO', 'GCC', 'DBA', 'REMX', 'URA', 'LIT', 'PALL', 'VALT']
-    crypto = ['BTC-USD']  # Crypto (BTC only - pure macro asset)
     real_assets = ['VNQ', 'PAVE']
 
     breakdown = {
         'Equities': 0,
         'Bonds': 0,
         'Commodities': 0,
-        'Crypto': 0,
         'Real Assets': 0,
         'Cash': 0
     }
@@ -190,8 +188,6 @@ def calculate_asset_class_breakdown(weights: dict) -> dict:
             breakdown['Bonds'] += weight
         elif ticker in commodities:
             breakdown['Commodities'] += weight
-        elif ticker in crypto:
-            breakdown['Crypto'] += weight
         elif ticker in real_assets:
             breakdown['Real Assets'] += weight
 
