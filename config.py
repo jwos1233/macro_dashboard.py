@@ -175,9 +175,8 @@ QUAD_ALLOCATIONS = {
         'XLI': 0.30 * 0.333,     # 33% of 30% Cyclicals
         'XLB': 0.30 * 0.334,     # 34% of 30% Cyclicals
         'USO': 0.30 * 0.334,     # 34% of 30% Cyclicals
-        'XOP': 0.15 * 0.333,     # 33% of 15% Energy
-        'AA': 0.15 * 0.333,      # 33% of 15% Energy
-        'FCG': 0.15 * 0.333,     # 33% of 15% Energy
+        'XOP': 0.15 * 0.50,      # 50% of 15% Energy
+        'FCG': 0.15 * 0.50,      # 50% of 15% Energy
         'VNQ': 0.10 * 0.50,      # 50% of 10% Real Assets
         'PAVE': 0.10 * 0.50,     # 50% of 10% Real Assets
         'VTV': 0.10 * 0.50,      # 50% of 10% Value
