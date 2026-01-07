@@ -236,14 +236,15 @@ def run_live_backtest() -> Optional[dict]:
 
                 # Asset class categorization (same as dashboard.py)
                 equities = ['QQQ', 'ARKK', 'IWM', 'XLC', 'XLY', 'XLV', 'XLU', 'XLP', 'XLF', 'XLI', 'XLB', 'VTV', 'IWD',
-                            'ARKX', 'BOTZ', 'EEM']
+                            'ARKX', 'BOTZ', 'EEM', 'AA']
                 bonds = ['TLT', 'LQD', 'IEF', 'VGLT', 'MUB', 'TIP', 'VTIP']
                 commodities = ['GLD', 'DBC', 'XLE', 'XOP', 'FCG', 'USO', 'GCC', 'DBA', 'REMX', 'URA', 'LIT', 'PALL', 'VALT']
+                crypto = ['BTC-USD']
                 real_assets = ['VNQ', 'PAVE']
 
                 def categorize_allocations(allocations):
                     """Categorize allocations into asset classes"""
-                    breakdown = {'Equities': 0, 'Bonds': 0, 'Commodities': 0, 'Real Assets': 0}
+                    breakdown = {'Equities': 0, 'Bonds': 0, 'Commodities': 0, 'Crypto': 0, 'Real Assets': 0}
                     for ticker, weight in allocations.items():
                         if ticker in equities:
                             breakdown['Equities'] += weight
@@ -251,6 +252,8 @@ def run_live_backtest() -> Optional[dict]:
                             breakdown['Bonds'] += weight
                         elif ticker in commodities:
                             breakdown['Commodities'] += weight
+                        elif ticker in crypto:
+                            breakdown['Crypto'] += weight
                         elif ticker in real_assets:
                             breakdown['Real Assets'] += weight
                     return breakdown
