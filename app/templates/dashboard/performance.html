@@ -360,7 +360,7 @@
     });
 
     // Calculate period statistics from filtered data
-    function calculatePeriodStats(values, spyValues, drawdowns, indices) {
+    function calculatePeriodStats(values, spyValues, drawdowns, indices, labels) {
         if (indices.length < 2) return null;
 
         const startVal = values[indices[0]];
@@ -373,31 +373,39 @@
         const spyPeriodReturn = ((spyEndVal / spyStartVal) - 1) * 100;
         const vsSpy = periodReturn - spyPeriodReturn;
 
-        // Calculate daily returns for the period
-        const dailyReturns = [];
+        // Calculate years from actual dates (not point count)
+        const startDate = new Date(labels[indices[0]]);
+        const endDate = new Date(labels[indices[indices.length - 1]]);
+        const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
+        const years = (endDate - startDate) / msPerYear;
+
+        // Annualized return (CAGR)
+        const annualReturn = years > 0 ? (Math.pow(endVal / startVal, 1 / years) - 1) * 100 : periodReturn;
+
+        // Calculate returns between sampled points
+        const sampledReturns = [];
         for (let i = 1; i < indices.length; i++) {
             const prevIdx = indices[i - 1];
             const currIdx = indices[i];
-            const dailyRet = (values[currIdx] / values[prevIdx]) - 1;
-            dailyReturns.push(dailyRet);
+            const ret = (values[currIdx] / values[prevIdx]) - 1;
+            sampledReturns.push(ret);
         }
 
-        // Win rate
-        const winningDays = dailyReturns.filter(r => r > 0).length;
-        const winRate = (winningDays / dailyReturns.length) * 100;
+        // Win rate (based on sampled intervals)
+        const winningPeriods = sampledReturns.filter(r => r > 0).length;
+        const winRate = (winningPeriods / sampledReturns.length) * 100;
 
-        // Volatility (annualized)
-        const mean = dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length;
-        const variance = dailyReturns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / dailyReturns.length;
-        const dailyVol = Math.sqrt(variance);
-        const annualVol = dailyVol * Math.sqrt(252) * 100;
+        // Volatility - need to annualize based on sampling frequency
+        // Average days between samples
+        const avgDaysBetweenSamples = (years * 365.25) / (indices.length - 1);
+        const samplesPerYear = 365.25 / avgDaysBetweenSamples;
 
-        // Annualized return
-        const tradingDays = indices.length;
-        const years = tradingDays / 252;
-        const annualReturn = (Math.pow(endVal / startVal, 1 / years) - 1) * 100;
+        const mean = sampledReturns.reduce((a, b) => a + b, 0) / sampledReturns.length;
+        const variance = sampledReturns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / sampledReturns.length;
+        const sampleVol = Math.sqrt(variance);
+        const annualVol = sampleVol * Math.sqrt(samplesPerYear) * 100;
 
-        // Sharpe ratio (assuming 0 risk-free rate for simplicity)
+        // Sharpe ratio
         const sharpe = annualVol > 0 ? annualReturn / annualVol : 0;
 
         // Max drawdown for the period
@@ -452,7 +460,7 @@
         drawdownChart.update();
 
         // Calculate and update summary stats
-        const stats = calculatePeriodStats(fullValues, fullSpyValues, fullDrawdowns, indices);
+        const stats = calculatePeriodStats(fullValues, fullSpyValues, fullDrawdowns, indices, fullLabels);
         if (stats) {
             updateMetric('metric-period-return', stats.periodReturn);
             updateMetric('metric-annual-return', stats.annualReturn);
