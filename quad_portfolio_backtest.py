@@ -311,8 +311,8 @@ class QuadrantPortfolioBacktest:
         total_trades = 0  # Track total individual position changes
         
         
-        # Trading cost per leg (10 basis points = 0.10%)
-        COST_PER_LEG_BPS = 10  # 10 basis points = 0.0010
+        # Trading cost per leg (5 basis points = 0.05%)
+        COST_PER_LEG_BPS = 5  # 5 basis points = 0.0005
         
         # Minimum trade size threshold (only trade if delta > this %)
         MIN_TRADE_THRESHOLD = 0.05  # 5% minimum trade size
