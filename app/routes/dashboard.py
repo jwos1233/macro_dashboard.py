@@ -205,46 +205,7 @@ def calculate_asset_class_breakdown(weights: dict) -> dict:
 @router.get("/dashboard")
 @router.get("/dashboard/overview")
 async def overview(request: Request):
-    """Main dashboard overview page"""
-    signals = get_signals()
-    backtest = load_backtest_results()
-
-    # Calculate asset class breakdown
-    breakdown = calculate_asset_class_breakdown(signals['target_weights'])
-
-    # Get top positions (sorted by weight)
-    top_positions = sorted(
-        signals['target_weights'].items(),
-        key=lambda x: x[1],
-        reverse=True
-    )[:10]
-
-    # Get performance summary from backtest
-    summary = backtest.get('summary', {})
-    monthly = backtest.get('monthly_returns', [])
-    ytd_return = sum(m.get('return', 0) for m in monthly if m.get('month', '').startswith('2025'))
-
-    performance_summary = {
-        'total_return': summary.get('total_return', 0),
-        'ytd_return': ytd_return,
-        'sharpe': summary.get('sharpe', 0),
-        'max_drawdown': summary.get('max_drawdown', 0),
-    }
-
-    return templates.TemplateResponse("dashboard/overview.html", {
-        "request": request,
-        "page": "overview",
-        "signals": signals,
-        "breakdown": breakdown,
-        "top_positions": top_positions,
-        "performance": performance_summary,
-        "quad_descriptions": QUADRANT_DESCRIPTIONS,
-    })
-
-
-@router.get("/dashboard/signals")
-async def signals_page(request: Request):
-    """Full signals/momentum table page"""
+    """Main dashboard overview page - signals and positions"""
     signals = get_signals()
 
     # Calculate asset class breakdown
@@ -267,12 +228,26 @@ async def signals_page(request: Request):
 
     return templates.TemplateResponse("dashboard/signals.html", {
         "request": request,
-        "page": "signals",
+        "page": "overview",
         "signals": signals,
         "breakdown": breakdown,
         "all_positions": all_positions,
         "ticker_quads": ticker_quads,
         "quad_descriptions": QUADRANT_DESCRIPTIONS,
+    })
+
+
+@router.get("/dashboard/quadrants")
+async def quadrants_page(request: Request):
+    """Quadrant analysis and regime detection page"""
+    signals = get_signals()
+
+    return templates.TemplateResponse("dashboard/quadrants.html", {
+        "request": request,
+        "page": "quadrants",
+        "signals": signals,
+        "quad_descriptions": QUADRANT_DESCRIPTIONS,
+        "quad_allocations": QUAD_ALLOCATIONS,
     })
 
 
