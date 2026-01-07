@@ -285,12 +285,11 @@ Guidelines:
 - Paragraph Format: Use flowing paragraphs (not bullet points) for Position-Level Analysis and Sell-Side Trade Ideas sections
 - Citations: Use bracketed numbers [1], [2], [3] in-text and compile all sources in the Sources section at the end
 
-CRITICAL FORMATTING RULES:
-- Do NOT use any markdown formatting whatsoever - no **bold**, no *italics*, no # headers, no bullet points with -
-- Write section headers as plain text followed by a colon and newline (e.g., "Quick Note:" not "**Quick Note**")
-- Use plain prose paragraphs separated by blank lines
-- For lists, use simple numbered format (1. 2. 3.) or write as comma-separated inline text
-- The output will be displayed as plain text, so all markdown syntax will appear as literal characters
+FORMATTING:
+- Use markdown formatting for structure: **bold** for emphasis, ## for section headers
+- Use bullet points (-) for lists where appropriate
+- Use tables where specified (Week Ahead Catalysts, Portfolio Tilt Summary)
+- Keep section headers clean and consistent (e.g., ## Quick Note, ## Regime Context)
 
 Create the morning note now based on today's date, current market conditions, latest available research, and the portfolio context provided."""
 
