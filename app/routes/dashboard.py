@@ -315,6 +315,9 @@ async def allocation_page(request: Request):
 
     positions_with_info.sort(key=lambda x: x['weight'], reverse=True)
 
+    # Get current exposure for reference lines
+    current_exposure = {k: round(v * 100, 1) for k, v in breakdown.items() if v > 0}
+
     return templates.TemplateResponse("dashboard/allocation.html", {
         "request": request,
         "page": "allocation",
@@ -324,6 +327,8 @@ async def allocation_page(request: Request):
         "quad_descriptions": QUADRANT_DESCRIPTIONS,
         "quad_allocations": QUAD_ALLOCATIONS,
         "asset_class_history": backtest.get('asset_class_history', []),
+        "asset_class_daily": backtest.get('asset_class_daily', []),
+        "current_exposure": current_exposure,
     })
 
 
