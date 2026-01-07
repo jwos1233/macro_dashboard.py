@@ -3,6 +3,65 @@
 {% block title %}Allocation - Epoch Macro{% endblock %}
 
 {% block content %}
+{# Asset name mappings #}
+{% set asset_names = {
+    'QQQ': 'Nasdaq 100',
+    'ARKK': 'ARK Innovation',
+    'IWM': 'Russell 2000',
+    'BTC-USD': 'Bitcoin',
+    'ETH-USD': 'Ethereum',
+    'XLC': 'Communication Services',
+    'XLY': 'Consumer Discretionary',
+    'TLT': '20+ Year Treasury',
+    'LQD': 'Investment Grade Corporate',
+    'ARKX': 'ARK Space Exploration',
+    'BOTZ': 'Robotics & AI',
+    'XLE': 'Energy Select',
+    'DBC': 'Commodities Index',
+    'GCC': 'Commodities Strategy',
+    'LIT': 'Lithium & Battery',
+    'PALL': 'Palladium',
+    'VALT': 'Treasury Collateral',
+    'XLF': 'Financial Select',
+    'XLI': 'Industrial Select',
+    'XLB': 'Materials Select',
+    'USO': 'US Oil Fund',
+    'XOP': 'Oil & Gas E&P',
+    'FCG': 'Natural Gas',
+    'VNQ': 'Real Estate',
+    'PAVE': 'Infrastructure',
+    'VTV': 'Value ETF',
+    'IWD': 'Russell 1000 Value',
+    'EEM': 'Emerging Markets',
+    'GLD': 'Gold',
+    'DBA': 'Agriculture',
+    'REMX': 'Rare Earth Metals',
+    'URA': 'Uranium',
+    'TIP': 'TIPS',
+    'VTIP': 'Short-Term TIPS',
+    'XLV': 'Health Care Select',
+    'XLU': 'Utilities Select',
+    'XLP': 'Consumer Staples',
+    'VGLT': 'Long-Term Treasury',
+    'IEF': '7-10 Year Treasury',
+    'MUB': 'Municipal Bonds',
+    'SLV': 'Silver'
+} %}
+
+{# Asset class categorization #}
+{% set asset_categories = {
+    'QQQ': 'Equities', 'ARKK': 'Equities', 'IWM': 'Equities', 'XLC': 'Equities', 'XLY': 'Equities',
+    'XLV': 'Equities', 'XLU': 'Equities', 'XLP': 'Equities', 'XLF': 'Equities', 'XLI': 'Equities',
+    'XLB': 'Equities', 'VTV': 'Equities', 'IWD': 'Equities', 'ARKX': 'Equities', 'BOTZ': 'Equities',
+    'EEM': 'Equities',
+    'TLT': 'Bonds', 'LQD': 'Bonds', 'IEF': 'Bonds', 'VGLT': 'Bonds', 'MUB': 'Bonds', 'TIP': 'Bonds', 'VTIP': 'Bonds',
+    'GLD': 'Commodities', 'DBC': 'Commodities', 'XLE': 'Commodities', 'XOP': 'Commodities', 'FCG': 'Commodities',
+    'USO': 'Commodities', 'GCC': 'Commodities', 'DBA': 'Commodities', 'REMX': 'Commodities', 'URA': 'Commodities',
+    'LIT': 'Commodities', 'PALL': 'Commodities', 'VALT': 'Commodities', 'SLV': 'Commodities',
+    'BTC-USD': 'Crypto', 'ETH-USD': 'Crypto',
+    'VNQ': 'Real Assets', 'PAVE': 'Real Assets'
+} %}
+
 <div class="space-y-6">
     <!-- Header -->
     <div>
@@ -38,9 +97,12 @@
         </div>
     </div>
 
-    <!-- Asset Class Breakdown -->
+    <!-- Asset Class Exposure -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Asset Class Breakdown</h2>
+        <div class="mb-4">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Asset Class Exposure</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Target exposure by category ({{ "%.1f"|format(signals.total_leverage) }}x total leverage)</p>
+        </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Donut Chart -->
@@ -69,10 +131,13 @@
         </div>
     </div>
 
-    <!-- Historical Asset Class Allocation -->
+    <!-- Historical Asset Class Exposure -->
     {% if asset_class_history and asset_class_history|length > 0 %}
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Historical Asset Class Allocation</h2>
+        <div class="mb-4">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Historical Asset Class Exposure</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Actual exposure over time — leverage visible as total exceeds 100%</p>
+        </div>
         <div class="h-72">
             <canvas id="historyChart"></canvas>
         </div>
@@ -90,19 +155,34 @@
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         <th class="px-4 py-3">#</th>
-                        <th class="px-4 py-3">Ticker</th>
+                        <th class="px-4 py-3">Asset</th>
+                        <th class="px-4 py-3">Category</th>
                         <th class="px-4 py-3">Weight</th>
                         <th class="px-4 py-3">Notional ($10k)</th>
                         <th class="px-4 py-3">Quadrant</th>
-                        <th class="px-4 py-3 hidden sm:table-cell">% of Total</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                     {% for pos in positions %}
+                    {% set category = asset_categories.get(pos.ticker, 'Other') %}
                     <tr class="data-row">
                         <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ loop.index }}</td>
                         <td class="px-4 py-3">
-                            <span class="font-semibold text-gray-900 dark:text-white">{{ pos.ticker }}</span>
+                            <div>
+                                <span class="font-semibold text-gray-900 dark:text-white">{{ asset_names.get(pos.ticker, pos.ticker) }}</span>
+                                <span class="text-xs text-gray-400 ml-1">{{ pos.ticker }}</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                {% if category == 'Equities' %}bg-navy/10 text-navy
+                                {% elif category == 'Bonds' %}bg-blue-100 text-blue-700
+                                {% elif category == 'Commodities' %}bg-gold/10 text-gold-dark
+                                {% elif category == 'Crypto' %}bg-purple-100 text-purple-700
+                                {% elif category == 'Real Assets' %}bg-success/10 text-success
+                                {% else %}bg-gray-100 text-gray-700{% endif %}">
+                                {{ category }}
+                            </span>
                         </td>
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-2">
@@ -126,18 +206,15 @@
                             </span>
                             {% endfor %}
                         </td>
-                        <td class="px-4 py-3 hidden sm:table-cell text-gray-600 dark:text-gray-300">
-                            {{ (pos.weight / signals.total_leverage * 100)|round(1) }}%
-                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot class="bg-gray-50 dark:bg-gray-700">
                     <tr class="font-semibold">
-                        <td class="px-4 py-3" colspan="2">Total</td>
+                        <td class="px-4 py-3" colspan="3">Total</td>
                         <td class="px-4 py-3">{{ (signals.total_leverage * 100)|round(1) }}%</td>
                         <td class="px-4 py-3">${{ "{:,.0f}".format(signals.total_leverage * 10000) }}</td>
-                        <td class="px-4 py-3" colspan="2"></td>
+                        <td class="px-4 py-3"></td>
                     </tr>
                 </tfoot>
             </table>
@@ -209,7 +286,7 @@
         }
     });
 
-    // Historical Asset Class Allocation Chart
+    // Historical Asset Class Exposure Chart (Stacked Bar - shows actual leverage)
     const historyData = {{ asset_class_history | tojson }};
 
     if (historyData && historyData.length > 0) {
@@ -222,12 +299,11 @@
             data: historyData.map(d => d[ac] || 0),
             backgroundColor: colors[ac],
             borderColor: colors[ac],
-            borderWidth: 1,
-            fill: true,
+            borderWidth: 0,
         }));
 
         new Chart(historyCtx, {
-            type: 'line',
+            type: 'bar',
             data: {
                 labels: historyLabels,
                 datasets: datasets
@@ -241,8 +317,13 @@
                 },
                 scales: {
                     x: {
+                        stacked: true,
                         grid: {
                             display: false
+                        },
+                        ticks: {
+                            maxTicksLimit: 10,
+                            maxRotation: 0
                         }
                     },
                     y: {
@@ -266,6 +347,10 @@
                         callbacks: {
                             label: function(context) {
                                 return `${context.dataset.label}: ${context.parsed.y.toFixed(1)}%`;
+                            },
+                            afterBody: function(tooltipItems) {
+                                const total = tooltipItems.reduce((sum, item) => sum + item.parsed.y, 0);
+                                return `\nTotal Exposure: ${total.toFixed(1)}%`;
                             }
                         }
                     }
