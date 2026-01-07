@@ -212,8 +212,9 @@ QUAD_ALLOCATIONS = {
 }
 
 # Quadrant indicator assets (for scoring)
+# Note: BTC-USD used as Q1 indicator for regime detection, but not allocated to
 QUAD_INDICATORS = {
-    'Q1': ['QQQ', 'VUG', 'IWM'],
+    'Q1': ['QQQ', 'VUG', 'IWM', 'BTC-USD'],
     'Q2': ['XLE', 'DBC', 'GCC', 'LIT'],
     'Q3': ['GLD', 'DBC', 'DBA', 'REMX', 'URA', 'LIT'],
     'Q4': ['TLT', 'XLU', 'VIXY']
