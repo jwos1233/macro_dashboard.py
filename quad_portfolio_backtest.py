@@ -31,6 +31,7 @@ Lag Structure (Prevents Forward-Looking Bias):
 - Macro signals (quad rankings): T-1 lag (trade yesterday's regime)
 - Entry confirmation (EMA filter): T+0 (check TODAY's live EMA)
 - Exit rule: Immediate (no lag)
+- Stop loss check: T open (check if gapped through stop at open, not close)
 """
 
 import numpy as np
@@ -370,19 +371,24 @@ class QuadrantPortfolioBacktest:
                     del pending_entries[ticker]
                 
                 # Check ATR stop losses (if enabled)
+                # IMPORTANT: Check against TODAY'S OPEN to avoid forward-looking bias
+                # (we can't know the close price when deciding to exit at open)
                 stop_loss_exits = []
-                if self.atr_stop_loss is not None and date in self.price_data.index:
+                if self.atr_stop_loss is not None and date in self.open_data.index:
                     for ticker in actual_positions[actual_positions > 0].index:
                         if ticker in entry_prices and ticker in self.atr_data.columns:
-                            current_price = self.price_data.loc[date, ticker]
+                            # Use TODAY'S OPEN for stop check (not close - that would be forward-looking)
+                            today_open = self.open_data.loc[date, ticker] if ticker in self.open_data.columns else None
                             entry_price = entry_prices[ticker]
-                            atr = self.atr_data.loc[date, ticker]
-                            
-                            if pd.notna(current_price) and pd.notna(atr) and pd.notna(entry_price):
+                            # Use YESTERDAY'S ATR (known at decision time)
+                            prev_date = target_weights.index[i-1] if i > 0 else date
+                            atr = self.atr_data.loc[prev_date, ticker] if prev_date in self.atr_data.index else None
+
+                            if pd.notna(today_open) and pd.notna(atr) and pd.notna(entry_price):
                                 stop_price = entry_price - (atr * self.atr_stop_loss)
-                                
-                                # Check if stop hit
-                                if current_price <= stop_price:
+
+                                # Check if stop hit at open (gap down through stop)
+                                if today_open <= stop_price:
                                     stop_loss_exits.append(ticker)
                                     actual_positions[ticker] = 0.0
                                     del entry_prices[ticker]
