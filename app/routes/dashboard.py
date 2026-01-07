@@ -169,7 +169,7 @@ def calculate_asset_class_breakdown(weights: dict) -> dict:
                 'ARKX', 'BOTZ', 'EEM']
     bonds = ['TLT', 'LQD', 'IEF', 'VGLT', 'MUB', 'TIP', 'VTIP']
     commodities = ['GLD', 'DBC', 'XLE', 'XOP', 'FCG', 'USO', 'GCC', 'DBA', 'REMX', 'URA', 'LIT', 'AA', 'PALL', 'VALT']
-    crypto = ['MSTR', 'BMNR']  # Bitcoin-related stocks
+    crypto = ['BTC-USD', 'ETH-USD']  # Crypto
     real_assets = ['VNQ', 'PAVE']
 
     breakdown = {

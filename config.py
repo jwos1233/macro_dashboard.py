@@ -155,8 +155,8 @@ QUAD_ALLOCATIONS = {
         'QQQ': 0.60 * 0.40,      # 40% of 60% Growth
         'ARKK': 0.60 * 0.30,     # 30% of 60% Growth
         'IWM': 0.60 * 0.15,      # 15% of 60% Growth (Small Caps)
-        'MSTR': 0.60 * 0.10,     # 10% of 60% Growth (MicroStrategy)
-        'BMNR': 0.60 * 0.10,     # 10% of 60% Growth (Bitcoin Miner)
+        'BTC-USD': 0.60 * 0.10,  # 10% of 60% Growth (Bitcoin)
+        'ETH-USD': 0.60 * 0.10,  # 10% of 60% Growth (Ethereum)
         'XLC': 0.15 * 0.50,      # 50% of 15% Consumer Disc
         'XLY': 0.15 * 0.50,      # 50% of 15% Consumer Disc
         'TLT': 0.10 * 0.50,      # 50% of 10% Bonds
