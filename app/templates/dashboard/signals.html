@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Signals - Epoch Macro{% endblock %}
+{% block title %}Overview - Epoch Macro{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Trading Signals</h1>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Overview</h1>
             <p class="text-gray-500 dark:text-gray-400 mt-1">
                 Current regime: <span class="font-medium text-navy dark:text-gold">{{ signals.current_regime }}</span>
             </p>
@@ -33,23 +33,37 @@
         </div>
     </div>
 
-    <!-- Summary Cards -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
-            <div class="text-sm text-gray-500 dark:text-gray-400">Total Positions</div>
-            <div class="text-2xl font-bold text-navy dark:text-white">{{ all_positions|length }}</div>
+    <!-- Asset Allocation Bar -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Asset Allocation</h2>
+            <a href="/dashboard/allocation" class="text-sm text-navy dark:text-gold hover:underline">View Details &rarr;</a>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
-            <div class="text-sm text-gray-500 dark:text-gray-400">Long Signals</div>
-            <div class="text-2xl font-bold text-success">{{ all_positions|length }}</div>
+
+        <!-- Allocation Bar -->
+        <div class="h-8 rounded-lg overflow-hidden flex mb-4">
+            {% set colors = {'Equities': 'bg-navy', 'Bonds': 'bg-blue-400', 'Commodities': 'bg-gold', 'Crypto': 'bg-purple-500', 'Real Assets': 'bg-green-500', 'Cash': 'bg-gray-300'} %}
+            {% for asset_class, weight in breakdown.items() %}
+                {% if weight > 0 %}
+                <div class="allocation-segment {{ colors[asset_class] }}"
+                     style="width: {{ (weight * 100)|round(1) }}%"
+                     title="{{ asset_class }}: {{ (weight * 100)|round(1) }}%">
+                </div>
+                {% endif %}
+            {% endfor %}
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
-            <div class="text-sm text-gray-500 dark:text-gray-400">Total Exposure</div>
-            <div class="text-2xl font-bold text-navy dark:text-white">{{ "%.1f"|format(signals.total_leverage * 100) }}%</div>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
-            <div class="text-sm text-gray-500 dark:text-gray-400">Active Quadrants</div>
-            <div class="text-2xl font-bold text-gold">2</div>
+
+        <!-- Legend -->
+        <div class="flex flex-wrap gap-4 text-sm">
+            {% for asset_class, weight in breakdown.items() %}
+                {% if weight > 0 %}
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded {{ colors[asset_class] }}"></div>
+                    <span class="text-gray-600 dark:text-gray-300">{{ asset_class }}</span>
+                    <span class="font-medium text-gray-900 dark:text-white">{{ (weight * 100)|round(1) }}%</span>
+                </div>
+                {% endif %}
+            {% endfor %}
         </div>
     </div>
 

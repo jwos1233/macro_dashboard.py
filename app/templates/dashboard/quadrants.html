@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Quadrants - Epoch Macro{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Macro Quadrants</h1>
+        <p class="text-gray-500 dark:text-gray-400 mt-1">
+            Regime detection and quadrant momentum analysis
+        </p>
+    </div>
+
+    <!-- Regime Indicator + Current Status -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- 4-Quadrant Grid -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <h2 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">Current Regime</h2>
+
+            <!-- 4-Quadrant Grid -->
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <!-- Q1: Goldilocks (top-right) -->
+                <div class="order-2 regime-quadrant rounded-lg p-4 text-center transition-all
+                            {% if 'Q1' in signals.top_quadrants %}active bg-success/20 border-2 border-success{% else %}bg-gray-100 dark:bg-gray-700{% endif %}">
+                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">Q1</div>
+                    <div class="text-sm font-semibold {% if 'Q1' in signals.top_quadrants %}text-success{% else %}text-gray-600 dark:text-gray-300{% endif %}">
+                        Goldilocks
+                    </div>
+                    <div class="text-lg font-bold {% if 'Q1' in signals.top_quadrants %}text-success{% else %}text-gray-400{% endif %}">
+                        {{ "%.1f"|format(signals.quadrant_scores['Q1']) }}%
+                    </div>
+                </div>
+
+                <!-- Q2: Reflation (top-left) -->
+                <div class="order-1 regime-quadrant rounded-lg p-4 text-center transition-all
+                            {% if 'Q2' in signals.top_quadrants %}active bg-gold/20 border-2 border-gold{% else %}bg-gray-100 dark:bg-gray-700{% endif %}">
+                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">Q2</div>
+                    <div class="text-sm font-semibold {% if 'Q2' in signals.top_quadrants %}text-gold{% else %}text-gray-600 dark:text-gray-300{% endif %}">
+                        Reflation
+                    </div>
+                    <div class="text-lg font-bold {% if 'Q2' in signals.top_quadrants %}text-gold{% else %}text-gray-400{% endif %}">
+                        {{ "%.1f"|format(signals.quadrant_scores['Q2']) }}%
+                    </div>
+                </div>
+
+                <!-- Q3: Stagflation (bottom-left) -->
+                <div class="order-3 regime-quadrant rounded-lg p-4 text-center transition-all
+                            {% if 'Q3' in signals.top_quadrants %}active bg-warning/20 border-2 border-warning{% else %}bg-gray-100 dark:bg-gray-700{% endif %}">
+                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">Q3</div>
+                    <div class="text-sm font-semibold {% if 'Q3' in signals.top_quadrants %}text-warning{% else %}text-gray-600 dark:text-gray-300{% endif %}">
+                        Stagflation
+                    </div>
+                    <div class="text-lg font-bold {% if 'Q3' in signals.top_quadrants %}text-warning{% else %}text-gray-400{% endif %}">
+                        {{ "%.1f"|format(signals.quadrant_scores['Q3']) }}%
+                    </div>
+                </div>
+
+                <!-- Q4: Deflation (bottom-right) -->
+                <div class="order-4 regime-quadrant rounded-lg p-4 text-center transition-all
+                            {% if 'Q4' in signals.top_quadrants %}active bg-navy/20 border-2 border-navy{% else %}bg-gray-100 dark:bg-gray-700{% endif %}">
+                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">Q4</div>
+                    <div class="text-sm font-semibold {% if 'Q4' in signals.top_quadrants %}text-navy{% else %}text-gray-600 dark:text-gray-300{% endif %}">
+                        Deflation
+                    </div>
+                    <div class="text-lg font-bold {% if 'Q4' in signals.top_quadrants %}text-navy{% else %}text-gray-400{% endif %}">
+                        {{ "%.1f"|format(signals.quadrant_scores['Q4']) }}%
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Regime Badge -->
+            <div class="text-center">
+                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-navy text-white">
+                    Active: {{ signals.current_regime }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Quadrant Descriptions -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <h2 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">Quadrant Definitions</h2>
+            <div class="space-y-4">
+                {% for quad in ['Q1', 'Q2', 'Q3', 'Q4'] %}
+                <div class="flex items-start gap-3 p-3 rounded-lg {% if quad in signals.top_quadrants %}bg-gray-50 dark:bg-gray-700{% endif %}">
+                    <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center
+                        {% if quad == 'Q1' %}bg-success/20 text-success
+                        {% elif quad == 'Q2' %}bg-gold/20 text-gold
+                        {% elif quad == 'Q3' %}bg-warning/20 text-warning
+                        {% else %}bg-navy/20 text-navy{% endif %}">
+                        <span class="font-bold">{{ quad }}</span>
+                    </div>
+                    <div>
+                        <div class="font-medium text-gray-900 dark:text-white">
+                            {% if quad == 'Q1' %}Goldilocks{% elif quad == 'Q2' %}Reflation{% elif quad == 'Q3' %}Stagflation{% else %}Deflation{% endif %}
+                        </div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                            {{ quad_descriptions[quad] }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quadrant Momentum Scores Chart -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quadrant Momentum Scores</h2>
+        <div class="h-64">
+            <canvas id="quadrantChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Quadrant Allocations -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for quad in ['Q1', 'Q2', 'Q3', 'Q4'] %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6
+                    {% if quad in signals.top_quadrants %}ring-2 ring-gold{% endif %}">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-gray-900 dark:text-white">
+                    {{ quad }} - {% if quad == 'Q1' %}Goldilocks{% elif quad == 'Q2' %}Reflation{% elif quad == 'Q3' %}Stagflation{% else %}Deflation{% endif %}
+                </h3>
+                {% if quad in signals.top_quadrants %}
+                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gold/10 text-gold-dark">
+                    Active
+                </span>
+                {% endif %}
+            </div>
+
+            <div class="text-3xl font-bold mb-2
+                {% if signals.quadrant_scores[quad] > 0 %}text-success{% else %}text-warning{% endif %}">
+                {{ "%.2f"|format(signals.quadrant_scores[quad]) }}%
+            </div>
+            <div class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                {{ quad_descriptions[quad] }}
+            </div>
+
+            <!-- Assets in this quadrant -->
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">ASSETS</div>
+                <div class="flex flex-wrap gap-2">
+                    {% for ticker in quad_allocations[quad].keys() %}
+                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                        {{ ticker }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Quadrant Scores Bar Chart
+    const ctx = document.getElementById('quadrantChart').getContext('2d');
+
+    const scores = {
+        'Q1': {{ signals.quadrant_scores['Q1'] }},
+        'Q2': {{ signals.quadrant_scores['Q2'] }},
+        'Q3': {{ signals.quadrant_scores['Q3'] }},
+        'Q4': {{ signals.quadrant_scores['Q4'] }}
+    };
+
+    const topQuads = ['{{ signals.top_quadrants[0] }}', '{{ signals.top_quadrants[1] }}'];
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Q1 Goldilocks', 'Q2 Reflation', 'Q3 Stagflation', 'Q4 Deflation'],
+            datasets: [{
+                label: 'Momentum Score (%)',
+                data: [scores.Q1, scores.Q2, scores.Q3, scores.Q4],
+                backgroundColor: [
+                    topQuads.includes('Q1') ? '#059669' : '#9CA3AF',
+                    topQuads.includes('Q2') ? '#D4A857' : '#9CA3AF',
+                    topQuads.includes('Q3') ? '#B91C1C' : '#9CA3AF',
+                    topQuads.includes('Q4') ? '#0F4C75' : '#9CA3AF',
+                ],
+                borderRadius: 8,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
