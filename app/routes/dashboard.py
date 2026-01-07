@@ -358,6 +358,7 @@ async def performance_page(request: Request):
         'win_rate': summary.get('win_rate', 0),
         'volatility': summary.get('volatility', 0),
         'annual_return': summary.get('annual_return', 0),
+        'rebalance_days': summary.get('rebalance_days', 0),
         'total_trades': summary.get('total_trades', 0),
         'trading_costs': summary.get('trading_costs', 0),
         'initial_capital': summary.get('initial_capital', 50000),

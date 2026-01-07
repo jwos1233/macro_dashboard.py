@@ -308,6 +308,7 @@ class QuadrantPortfolioBacktest:
         trades_skipped = 0  # Track trades skipped due to minimum threshold
         stops_hit = 0  # Track stop losses
         total_costs = 0.0  # Track cumulative trading costs
+        total_trades = 0  # Track total individual position changes
         
         
         # Trading cost per leg (10 basis points = 0.10%)
@@ -397,6 +398,7 @@ class QuadrantPortfolioBacktest:
                                     if ticker in entry_atrs:
                                         del entry_atrs[ticker]
                                     stops_hit += 1
+                                    total_trades += 1  # Count stop loss exit as a trade
                 
                 # Determine if we need to rebalance
                 should_rebalance = False
@@ -437,6 +439,7 @@ class QuadrantPortfolioBacktest:
                     # First, apply confirmed entries
                     for ticker, weight in confirmed_entries.items():
                         actual_positions[ticker] = weight
+                        total_trades += 1  # Count as a trade
                         # Record entry price, date, and ATR for stop loss tracking
                         if self.atr_stop_loss is not None and date in self.price_data.index:
                             entry_prices[ticker] = self.price_data.loc[date, ticker]
@@ -463,6 +466,7 @@ class QuadrantPortfolioBacktest:
                         if target_weight == 0 and current_position > 0:
                             # Exit immediately (no lag)
                             actual_positions[ticker] = 0
+                            total_trades += 1  # Count as a trade
                             # Clear entry tracking
                             if ticker in entry_prices:
                                 del entry_prices[ticker]
@@ -482,6 +486,7 @@ class QuadrantPortfolioBacktest:
                             elif position_delta > MIN_TRADE_THRESHOLD:
                                 # Not in stable quad + delta exceeds threshold - rebalance
                                 actual_positions[ticker] = target_weight
+                                total_trades += 1  # Count as a trade
                             else:
                                 # Small delta - skip
                                 trades_skipped += 1
@@ -551,11 +556,14 @@ class QuadrantPortfolioBacktest:
         
         self.portfolio_value = portfolio_value
         self.total_trading_costs = total_costs
+        self.total_trades = total_trades  # Total individual position changes
+        self.rebalance_count = rebalance_count  # Number of rebalancing days
         self.entry_prices = entry_prices  # Current open positions entry prices
         self.entry_dates = entry_dates    # Current open positions entry dates
         self.entry_atrs = entry_atrs      # Current open positions entry ATRs
-        
-        print(f"  Total rebalances: {rebalance_count} (out of {len(target_weights)-1} days)")
+
+        print(f"  Rebalancing days: {rebalance_count} (out of {len(target_weights)-1} trading days)")
+        print(f"  Total trades: {total_trades}")
         print(f"  Entries confirmed: {entries_confirmed}")
         print(f"  Entries rejected: {entries_rejected}")
         print(f"  Rejection rate: {entries_rejected / (entries_confirmed + entries_rejected) * 100:.1f}%")
