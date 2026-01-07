@@ -46,9 +46,10 @@ def run_live_backtest() -> Optional[dict]:
         from quad_portfolio_backtest import QuadrantPortfolioBacktest
         print("  ✓ Import successful", flush=True)
 
-        print("Step 2: Importing numpy...", flush=True)
+        print("Step 2: Importing numpy and pandas...", flush=True)
         import numpy as np
-        print("  ✓ Numpy imported", flush=True)
+        import pandas as pd
+        print("  ✓ Numpy and pandas imported", flush=True)
 
         from datetime import datetime, timedelta
 
@@ -245,12 +246,84 @@ def run_live_backtest() -> Optional[dict]:
                     return breakdown
 
                 # Sample at same rate as equity curve for consistency (overview)
-                for sample_date in sample_dates:
-                    if sample_date in quad_history.index:
-                        top1 = quad_history.loc[sample_date, 'Top1']
-                        top2 = quad_history.loc[sample_date, 'Top2']
+                # Use actual target_weights from backtest (includes vol weighting, EMA filters, max_positions)
+                if hasattr(backtest, 'target_weights') and backtest.target_weights is not None:
+                    target_weights_df = backtest.target_weights
+                    for sample_date in sample_dates:
+                        if sample_date in target_weights_df.index:
+                            # Get actual weights for this date
+                            day_weights = target_weights_df.loc[sample_date]
+                            actual_allocations = {}
+                            for ticker in day_weights.index:
+                                weight = day_weights[ticker]
+                                if pd.notna(weight) and weight > 0.001:
+                                    actual_allocations[ticker] = float(weight)
 
-                        # Combine allocations from both active quadrants
+                            breakdown = categorize_allocations(actual_allocations)
+                            breakdown = {k: round(v * 100, 1) for k, v in breakdown.items()}
+
+                            asset_class_history.append({
+                                'date': sample_date.strftime('%Y-%m-%d'),
+                                **breakdown
+                            })
+                else:
+                    # Fallback to QUAD_ALLOCATIONS if target_weights not available
+                    for sample_date in sample_dates:
+                        if sample_date in quad_history.index:
+                            top1 = quad_history.loc[sample_date, 'Top1']
+                            top2 = quad_history.loc[sample_date, 'Top2']
+
+                            combined = {}
+                            for quad in [top1, top2]:
+                                if quad in QUAD_ALLOCATIONS:
+                                    for ticker, weight in QUAD_ALLOCATIONS[quad].items():
+                                        combined[ticker] = combined.get(ticker, 0) + weight * 0.5
+
+                            breakdown = categorize_allocations(combined)
+                            breakdown = {k: round(v * 100, 1) for k, v in breakdown.items()}
+
+                            asset_class_history.append({
+                                'date': sample_date.strftime('%Y-%m-%d'),
+                                **breakdown
+                            })
+
+                # Daily history for last 2 years using ACTUAL target_weights from backtest
+                # (not theoretical QUAD_ALLOCATIONS - this shows what we actually held)
+                two_years_ago = datetime.now() - timedelta(days=730)
+
+                # Use actual target_weights from backtest (includes vol weighting, EMA filters, max_positions)
+                if hasattr(backtest, 'target_weights') and backtest.target_weights is not None:
+                    target_weights = backtest.target_weights
+                    recent_dates = [d for d in target_weights.index if d >= two_years_ago]
+
+                    for date in recent_dates:
+                        # Get actual weights for this date (these are the real positions)
+                        day_weights = target_weights.loc[date]
+
+                        # Build allocations dict from actual non-zero positions
+                        actual_allocations = {}
+                        for ticker in day_weights.index:
+                            weight = day_weights[ticker]
+                            if pd.notna(weight) and weight > 0.001:  # Only include actual positions
+                                actual_allocations[ticker] = float(weight)
+
+                        breakdown = categorize_allocations(actual_allocations)
+                        breakdown = {k: round(v * 100, 1) for k, v in breakdown.items()}
+                        # Calculate total exposure for this day
+                        total_exposure = sum(breakdown.values())
+
+                        asset_class_daily.append({
+                            'date': date.strftime('%Y-%m-%d'),
+                            'total': round(total_exposure, 1),
+                            **breakdown
+                        })
+                else:
+                    # Fallback: use quad_history with QUAD_ALLOCATIONS if target_weights not available
+                    recent_dates = [d for d in quad_history.index if d >= two_years_ago]
+                    for date in recent_dates:
+                        top1 = quad_history.loc[date, 'Top1']
+                        top2 = quad_history.loc[date, 'Top2']
+
                         combined = {}
                         for quad in [top1, top2]:
                             if quad in QUAD_ALLOCATIONS:
@@ -258,41 +331,18 @@ def run_live_backtest() -> Optional[dict]:
                                     combined[ticker] = combined.get(ticker, 0) + weight * 0.5
 
                         breakdown = categorize_allocations(combined)
-                        # Convert to percentages (don't normalize - leverage means >100% is valid)
                         breakdown = {k: round(v * 100, 1) for k, v in breakdown.items()}
+                        total_exposure = sum(breakdown.values())
 
-                        asset_class_history.append({
-                            'date': sample_date.strftime('%Y-%m-%d'),
+                        asset_class_daily.append({
+                            'date': date.strftime('%Y-%m-%d'),
+                            'total': round(total_exposure, 1),
                             **breakdown
                         })
 
-                # Daily history for last 2 years (allocation page detail)
-                two_years_ago = datetime.now() - timedelta(days=730)
-                recent_dates = [d for d in quad_history.index if d >= two_years_ago]
-
-                for date in recent_dates:
-                    top1 = quad_history.loc[date, 'Top1']
-                    top2 = quad_history.loc[date, 'Top2']
-
-                    combined = {}
-                    for quad in [top1, top2]:
-                        if quad in QUAD_ALLOCATIONS:
-                            for ticker, weight in QUAD_ALLOCATIONS[quad].items():
-                                combined[ticker] = combined.get(ticker, 0) + weight * 0.5
-
-                    breakdown = categorize_allocations(combined)
-                    breakdown = {k: round(v * 100, 1) for k, v in breakdown.items()}
-                    # Calculate total exposure for this day
-                    total_exposure = sum(breakdown.values())
-
-                    asset_class_daily.append({
-                        'date': date.strftime('%Y-%m-%d'),
-                        'total': round(total_exposure, 1),
-                        **breakdown
-                    })
-
-                print(f"Built asset class history with {len(asset_class_history)} points (sampled)", flush=True)
-                print(f"Built daily asset class history with {len(asset_class_daily)} points (2yr)", flush=True)
+                using_actual = hasattr(backtest, 'target_weights') and backtest.target_weights is not None
+                print(f"Built asset class history with {len(asset_class_history)} points (sampled, {'actual positions' if using_actual else 'theoretical'})", flush=True)
+                print(f"Built daily asset class history with {len(asset_class_daily)} points (2yr, {'actual positions' if using_actual else 'theoretical'})", flush=True)
             except Exception as e:
                 print(f"Could not build asset class history: {e}", flush=True)
 
