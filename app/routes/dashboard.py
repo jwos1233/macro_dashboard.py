@@ -166,10 +166,10 @@ def calculate_asset_class_breakdown(weights: dict) -> dict:
     """Calculate asset class breakdown from weights"""
     # Map tickers to asset classes
     equities = ['QQQ', 'ARKK', 'IWM', 'XLC', 'XLY', 'XLV', 'XLU', 'XLP', 'XLF', 'XLI', 'XLB', 'VTV', 'IWD',
-                'MSTR', 'BMNR', 'ARKX', 'BOTZ', 'EEM']
+                'ARKX', 'BOTZ', 'EEM']
     bonds = ['TLT', 'LQD', 'IEF', 'VGLT', 'MUB', 'TIP', 'VTIP']
     commodities = ['GLD', 'DBC', 'XLE', 'XOP', 'FCG', 'USO', 'GCC', 'DBA', 'REMX', 'URA', 'LIT', 'AA', 'PALL', 'VALT']
-    crypto = []  # No crypto ETFs in current allocations
+    crypto = ['MSTR', 'BMNR']  # Bitcoin-related stocks
     real_assets = ['VNQ', 'PAVE']
 
     breakdown = {
