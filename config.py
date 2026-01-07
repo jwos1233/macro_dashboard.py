@@ -63,6 +63,7 @@ CORE_ASSETS = {
     'QQQ': 'NASDAQ 100 (Growth)',
     'VUG': 'Vanguard Growth ETF',
     'IWM': 'Russell 2000 (Small Caps)',
+    'BTC-USD': 'Bitcoin (BTC)',
 
     # Q2 Assets (Growth ↑, Inflation ↑)
     'XLE': 'Energy Sector ETF',
@@ -148,18 +149,17 @@ LOG_LEVEL = "INFO"
 LOG_FILE = "macro_quadrant_strategy.log"
 
 # === QUADRANT ALLOCATIONS (FOR DASHBOARD) ===
-# Portfolio Allocations per Quadrant
+# Portfolio Allocations per Quadrant - ORIGINAL PROVEN UNIVERSE
 QUAD_ALLOCATIONS = {
     'Q1': {
-        'QQQ': 0.60 * 0.45,      # 45% of 60% Growth
-        'ARKK': 0.60 * 0.35,     # 35% of 60% Growth
-        'IWM': 0.60 * 0.20,      # 20% of 60% Growth (Small Caps)
+        'QQQ': 0.60 * 0.40,      # 40% of 60% Growth
+        'BTC-USD': 0.60 * 0.40,  # 40% of 60% Growth (Bitcoin)
+        'ARKK': 0.60 * 0.30,     # 30% of 60% Growth
+        'IWM': 0.60 * 0.15,      # 15% of 60% Growth (Small Caps)
         'XLC': 0.15 * 0.50,      # 50% of 15% Consumer Disc
         'XLY': 0.15 * 0.50,      # 50% of 15% Consumer Disc
         'TLT': 0.10 * 0.50,      # 50% of 10% Bonds
         'LQD': 0.10 * 0.50,      # 50% of 10% Bonds
-        'ARKX': 0.10 * 0.50,     # 50% of 10% Thematic
-        'BOTZ': 0.10 * 0.50,     # 50% of 10% Thematic
     },
     'Q2': {
         'XLE': 0.35 * 0.20,      # 20% of 35% Commodities
@@ -167,13 +167,13 @@ QUAD_ALLOCATIONS = {
         'GCC': 0.35 * 0.20,      # 20% of 35% Commodities
         'LIT': 0.35 * 0.10,      # 10% of 35% Commodities (Lithium)
         'PALL': 0.35 * 0.10,     # 10% of 35% Commodities (Palladium)
-        'VALT': 0.35 * 0.10,     # 10% of 35% Commodities (Treasury collateral)
         'XLF': 0.30 * 0.333,     # 33% of 30% Cyclicals
         'XLI': 0.30 * 0.333,     # 33% of 30% Cyclicals
         'XLB': 0.30 * 0.334,     # 34% of 30% Cyclicals
         'USO': 0.30 * 0.334,     # 34% of 30% Cyclicals
-        'XOP': 0.15 * 0.50,      # 50% of 15% Energy
-        'FCG': 0.15 * 0.50,      # 50% of 15% Energy
+        'XOP': 0.15 * 0.333,     # 33% of 15% Energy
+        'AA': 0.15 * 0.333,      # 33% of 15% Energy (Alcoa)
+        'FCG': 0.15 * 0.333,     # 33% of 15% Energy
         'VNQ': 0.10 * 0.50,      # 50% of 10% Real Assets
         'PAVE': 0.10 * 0.50,     # 50% of 10% Real Assets
         'VTV': 0.10 * 0.50,      # 50% of 10% Value
@@ -212,7 +212,6 @@ QUAD_ALLOCATIONS = {
 }
 
 # Quadrant indicator assets (for scoring)
-# Note: BTC-USD used as Q1 indicator for regime detection, but not allocated to
 QUAD_INDICATORS = {
     'Q1': ['QQQ', 'VUG', 'IWM', 'BTC-USD'],
     'Q2': ['XLE', 'DBC', 'GCC', 'LIT'],

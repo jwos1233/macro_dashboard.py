@@ -76,7 +76,7 @@ def categorize_holdings(weights: dict) -> dict:
     """Map ticker holdings to categories and calculate aggregate exposures"""
     categories = {
         'Growth Equities': ['QQQ', 'ARKK', 'IWM', 'XLC', 'XLY', 'ARKX', 'BOTZ', 'EEM'],
-        'Cyclical Equities': ['XLF', 'XLI', 'XLB', 'VTV', 'IWD'],
+        'Cyclical Equities': ['XLF', 'XLI', 'XLB', 'VTV', 'IWD', 'AA'],
         'Defensive Equities': ['XLU', 'XLP', 'XLV'],
         'Energy': ['XLE', 'XOP', 'FCG', 'USO'],
         'Commodities (Broad)': ['DBC', 'GCC'],
@@ -86,7 +86,8 @@ def categorize_holdings(weights: dict) -> dict:
         'Duration (Long)': ['TLT', 'VGLT', 'IEF'],
         'Duration (Short/TIPS)': ['TIP', 'VTIP', 'VALT'],
         'Credit (IG)': ['LQD', 'MUB'],
-        'Real Assets': ['VNQ', 'PAVE']
+        'Real Assets': ['VNQ', 'PAVE'],
+        'Crypto': ['BTC-USD']
     }
 
     # Reverse lookup
@@ -200,9 +201,10 @@ Category Mapping Reference:
 - Duration (Short/TIPS): TIP, VTIP, VALT
 - Credit (IG): LQD, MUB
 - Real Assets: VNQ, PAVE
+- Crypto: BTC-USD
 
 Quadrant Definitions:
-- Q1 (Goldilocks): Growth↑, Inflation↓ – favor growth assets, duration
+- Q1 (Goldilocks): Growth↑, Inflation↓ – favor growth assets, duration, crypto
 - Q2 (Reflation): Growth↑, Inflation↑ – favor commodities, cyclicals, real assets, energy
 - Q3 (Stagflation): Growth↓, Inflation↑ – favor energy, commodities, TIPS, defensives
 - Q4 (Deflation): Growth↓, Inflation↓ – favor long duration, IG credit, defensives, USD
@@ -237,6 +239,7 @@ Weave together insights on:
 - Equities – Sector rotation themes, growth vs value vs cyclicals vs defensives
 - Commodities – Energy, metals, ags dynamics; real rates impact
 - Credit – IG vs HY, spread dynamics
+- Crypto – Regime context, correlation dynamics
 
 **Portfolio Positioning vs. Consensus**
 Analyze the portfolio against sell-side themes:
