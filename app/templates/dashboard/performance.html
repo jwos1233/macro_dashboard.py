@@ -534,20 +534,10 @@
             updateMetric('metric-period-return', stats.periodReturn);
             updateMetric('metric-annual-return', stats.annualReturn);
             updateMetric('metric-vs-spy', stats.vsSpy);
-            updateMetric('metric-sharpe', stats.sharpe, '', 2, false);
             updateMetric('metric-max-dd', stats.maxDrawdown, '%', 1, false);
-            updateMetric('metric-win-rate', stats.winRate, '%', 1, false);
-            updateMetric('metric-volatility', stats.volatility, '%', 1, false);
 
-            // Special handling for metrics without +/-
-            const sharpeEl = document.getElementById('metric-sharpe');
-            if (sharpeEl) sharpeEl.textContent = stats.sharpe.toFixed(2);
-
-            const winRateEl = document.getElementById('metric-win-rate');
-            if (winRateEl) winRateEl.textContent = stats.winRate.toFixed(1) + '%';
-
-            const volEl = document.getElementById('metric-volatility');
-            if (volEl) volEl.textContent = stats.volatility.toFixed(1) + '%';
+            // Don't recalculate Sharpe/Vol/WinRate - keep server values (more accurate)
+            // These are full-period metrics that don't make sense to slice
         }
     }
 
