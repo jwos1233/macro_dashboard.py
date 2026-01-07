@@ -234,6 +234,7 @@ async def overview(request: Request):
         "all_positions": all_positions,
         "ticker_quads": ticker_quads,
         "quad_descriptions": QUADRANT_DESCRIPTIONS,
+        "quad_allocations": QUAD_ALLOCATIONS,
     })
 
 
