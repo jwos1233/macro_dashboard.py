@@ -212,8 +212,10 @@ def run_live_backtest() -> Optional[dict]:
                 'max_dd': round(yearly_dd.get(year, 0), 2)
             })
 
-        # Build historical asset class allocation
+        # Build historical asset class allocation (sampled for overview)
         asset_class_history = []
+        # Build daily asset class history for last 2 years (for allocation page)
+        asset_class_daily = []
         if quad_history is not None and len(quad_history) > 0:
             try:
                 from config import QUAD_ALLOCATIONS
@@ -242,7 +244,7 @@ def run_live_backtest() -> Optional[dict]:
                             breakdown['Real Assets'] += weight
                     return breakdown
 
-                # Sample at same rate as equity curve for consistency
+                # Sample at same rate as equity curve for consistency (overview)
                 for sample_date in sample_dates:
                     if sample_date in quad_history.index:
                         top1 = quad_history.loc[sample_date, 'Top1']
@@ -263,7 +265,34 @@ def run_live_backtest() -> Optional[dict]:
                             'date': sample_date.strftime('%Y-%m-%d'),
                             **breakdown
                         })
-                print(f"Built asset class history with {len(asset_class_history)} points", flush=True)
+
+                # Daily history for last 2 years (allocation page detail)
+                two_years_ago = datetime.now() - timedelta(days=730)
+                recent_dates = [d for d in quad_history.index if d >= two_years_ago]
+
+                for date in recent_dates:
+                    top1 = quad_history.loc[date, 'Top1']
+                    top2 = quad_history.loc[date, 'Top2']
+
+                    combined = {}
+                    for quad in [top1, top2]:
+                        if quad in QUAD_ALLOCATIONS:
+                            for ticker, weight in QUAD_ALLOCATIONS[quad].items():
+                                combined[ticker] = combined.get(ticker, 0) + weight * 0.5
+
+                    breakdown = categorize_allocations(combined)
+                    breakdown = {k: round(v * 100, 1) for k, v in breakdown.items()}
+                    # Calculate total exposure for this day
+                    total_exposure = sum(breakdown.values())
+
+                    asset_class_daily.append({
+                        'date': date.strftime('%Y-%m-%d'),
+                        'total': round(total_exposure, 1),
+                        **breakdown
+                    })
+
+                print(f"Built asset class history with {len(asset_class_history)} points (sampled)", flush=True)
+                print(f"Built daily asset class history with {len(asset_class_daily)} points (2yr)", flush=True)
             except Exception as e:
                 print(f"Could not build asset class history: {e}", flush=True)
 
@@ -367,6 +396,7 @@ def run_live_backtest() -> Optional[dict]:
             'equity_curve': equity_curve,
             'spy_curve': spy_curve,
             'asset_class_history': asset_class_history,
+            'asset_class_daily': asset_class_daily,
             'generated_at': datetime.now().isoformat()
         }
 
@@ -461,6 +491,7 @@ def get_default_backtest_results() -> dict:
         "equity_curve": [],
         "spy_curve": [],
         "asset_class_history": [],
+        "asset_class_daily": [],
         "generated_at": None
     }
 

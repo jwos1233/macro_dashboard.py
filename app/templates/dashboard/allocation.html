@@ -131,15 +131,39 @@
         </div>
     </div>
 
-    <!-- Historical Asset Class Exposure -->
-    {% if asset_class_history and asset_class_history|length > 0 %}
+    <!-- Historical Asset Class Exposure (Daily, Last 2 Years) -->
+    {% if asset_class_daily and asset_class_daily|length > 0 %}
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-        <div class="mb-4">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Historical Asset Class Exposure</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Actual exposure over time — leverage visible as total exceeds 100%</p>
+        <div class="flex items-start justify-between mb-4">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Historical Asset Class Exposure</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Daily exposure over last 2 years — dashed lines show current levels</p>
+            </div>
+            <div class="text-right">
+                <div class="text-sm text-gray-500">Current Total</div>
+                <div class="text-xl font-bold text-navy">{{ "%.0f"|format(signals.total_leverage * 100) }}%</div>
+            </div>
         </div>
-        <div class="h-72">
+        <div class="h-80">
             <canvas id="historyChart"></canvas>
+        </div>
+        <!-- Current Exposure Legend -->
+        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="text-xs text-gray-500 mb-2">Current Exposure (dashed lines)</div>
+            <div class="flex flex-wrap gap-4">
+                {% for asset_class, exposure in current_exposure.items() %}
+                <div class="flex items-center gap-2">
+                    <div class="w-6 h-0.5 border-t-2 border-dashed
+                        {% if asset_class == 'Equities' %}border-navy
+                        {% elif asset_class == 'Bonds' %}border-blue-400
+                        {% elif asset_class == 'Commodities' %}border-gold
+                        {% elif asset_class == 'Crypto' %}border-purple-500
+                        {% elif asset_class == 'Real Assets' %}border-success
+                        {% else %}border-gray-400{% endif %}"></div>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">{{ asset_class }}: {{ exposure }}%</span>
+                </div>
+                {% endfor %}
+            </div>
         </div>
     </div>
     {% endif %}
@@ -286,24 +310,57 @@
         }
     });
 
-    // Historical Asset Class Exposure Chart (Stacked Bar - shows actual leverage)
-    const historyData = {{ asset_class_history | tojson }};
+    // Historical Asset Class Exposure Chart (Daily, Last 2 Years)
+    // Shows individual asset class lines with dashed current level references
+    const dailyData = {{ asset_class_daily | tojson }};
+    const currentExposure = {{ current_exposure | tojson }};
 
-    if (historyData && historyData.length > 0) {
+    if (dailyData && dailyData.length > 0) {
         const historyCtx = document.getElementById('historyChart').getContext('2d');
-        const historyLabels = historyData.map(d => d.date);
+        const historyLabels = dailyData.map(d => d.date);
 
-        const assetClasses = ['Equities', 'Bonds', 'Commodities', 'Crypto', 'Real Assets'];
-        const datasets = assetClasses.map(ac => ({
-            label: ac,
-            data: historyData.map(d => d[ac] || 0),
-            backgroundColor: colors[ac],
-            borderColor: colors[ac],
-            borderWidth: 0,
-        }));
+        // Only show asset classes that have meaningful data
+        const assetClasses = ['Equities', 'Commodities', 'Crypto', 'Bonds', 'Real Assets'];
+        const activeClasses = assetClasses.filter(ac =>
+            dailyData.some(d => (d[ac] || 0) > 0) || (currentExposure[ac] || 0) > 0
+        );
+
+        // Create line datasets for each asset class
+        const datasets = [];
+
+        activeClasses.forEach(ac => {
+            // Historical line (solid, with fill)
+            datasets.push({
+                label: ac,
+                data: dailyData.map(d => d[ac] || 0),
+                backgroundColor: colors[ac] + '20',
+                borderColor: colors[ac],
+                borderWidth: 2,
+                fill: true,
+                tension: 0.2,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+            });
+
+            // Current exposure reference line (dashed horizontal)
+            if (currentExposure[ac]) {
+                datasets.push({
+                    label: `${ac} (current: ${currentExposure[ac]}%)`,
+                    data: Array(dailyData.length).fill(currentExposure[ac]),
+                    borderColor: colors[ac],
+                    borderWidth: 2,
+                    borderDash: [8, 4],
+                    fill: false,
+                    pointRadius: 0,
+                    tension: 0,
+                    // Mark as reference line for filtering
+                    isReference: true,
+                });
+            }
+        });
 
         new Chart(historyCtx, {
-            type: 'bar',
+            type: 'line',
             data: {
                 labels: historyLabels,
                 datasets: datasets
@@ -317,17 +374,23 @@
                 },
                 scales: {
                     x: {
-                        stacked: true,
                         grid: {
                             display: false
                         },
                         ticks: {
-                            maxTicksLimit: 10,
-                            maxRotation: 0
+                            maxTicksLimit: 12,
+                            maxRotation: 0,
+                            callback: function(value, index) {
+                                const date = historyLabels[index];
+                                if (date) {
+                                    const d = new Date(date);
+                                    return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+                                }
+                                return '';
+                            }
                         }
                     },
                     y: {
-                        stacked: true,
                         min: 0,
                         grid: {
                             color: 'rgba(0,0,0,0.05)'
@@ -342,15 +405,33 @@
                 plugins: {
                     legend: {
                         position: 'top',
+                        labels: {
+                            filter: function(item, data) {
+                                // Only show main asset classes in legend (not reference lines)
+                                return !data.datasets[item.datasetIndex].isReference;
+                            },
+                            usePointStyle: true,
+                            boxWidth: 8,
+                        }
                     },
                     tooltip: {
+                        filter: function(item) {
+                            // Don't show reference lines in tooltip
+                            return !item.dataset.isReference;
+                        },
                         callbacks: {
-                            label: function(context) {
-                                return `${context.dataset.label}: ${context.parsed.y.toFixed(1)}%`;
+                            title: function(tooltipItems) {
+                                const date = tooltipItems[0].label;
+                                return new Date(date).toLocaleDateString('en-US', {
+                                    month: 'short', day: 'numeric', year: 'numeric'
+                                });
                             },
-                            afterBody: function(tooltipItems) {
-                                const total = tooltipItems.reduce((sum, item) => sum + item.parsed.y, 0);
-                                return `\nTotal Exposure: ${total.toFixed(1)}%`;
+                            label: function(context) {
+                                const current = currentExposure[context.dataset.label] || 0;
+                                const historical = context.parsed.y;
+                                const diff = historical - current;
+                                const diffStr = diff >= 0 ? `+${diff.toFixed(0)}%` : `${diff.toFixed(0)}%`;
+                                return `${context.dataset.label}: ${historical.toFixed(1)}% (vs current: ${diffStr})`;
                             }
                         }
                     }
