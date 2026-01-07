@@ -211,7 +211,7 @@ def run_live_backtest() -> Optional[dict]:
                 equities = ['QQQ', 'ARKK', 'IWM', 'XLC', 'XLY', 'XLV', 'XLU', 'XLP', 'XLF', 'XLI', 'XLB', 'VTV', 'IWD',
                             'ARKX', 'BOTZ', 'EEM']
                 bonds = ['TLT', 'LQD', 'IEF', 'VGLT', 'MUB', 'TIP', 'VTIP']
-                commodities = ['GLD', 'DBC', 'XLE', 'XOP', 'FCG', 'USO', 'GCC', 'DBA', 'REMX', 'URA', 'LIT', 'AA', 'PALL', 'VALT']
+                commodities = ['GLD', 'DBC', 'XLE', 'XOP', 'FCG', 'USO', 'GCC', 'DBA', 'REMX', 'URA', 'LIT', 'PALL', 'VALT']
                 crypto = ['BTC-USD', 'ETH-USD']  # Crypto
                 real_assets = ['VNQ', 'PAVE']
 

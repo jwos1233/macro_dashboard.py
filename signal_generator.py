@@ -51,10 +51,10 @@ class SignalGenerator:
     def fetch_market_data(self, lookback_days=150):
         """
         Fetch market data for all tickers
-        
+
         Args:
             lookback_days: Number of days to fetch (default 150 for buffers)
-        
+
         Returns:
             DataFrame with price data
         """
@@ -64,32 +64,50 @@ class SignalGenerator:
             all_tickers.update(quad_assets.keys())
         for indicators in QUAD_INDICATORS.values():
             all_tickers.update(indicators)
-        
+
         all_tickers = sorted(list(all_tickers))
-        
-        end_date = datetime.now()
+
+        # Use yesterday's date to ensure consistent data availability
+        # (today's data may not be finalized until after market close)
+        end_date = datetime.now() - timedelta(days=1)
         start_date = end_date - timedelta(days=lookback_days)
-        
+
         print(f"Fetching data for {len(all_tickers)} tickers...")
-        
+        print(f"  Date range: {start_date.date()} to {end_date.date()} (using yesterday for consistency)")
+
         price_series = []
+        last_available_dates = []
+
         for ticker in all_tickers:
             try:
-                data = yf.download(ticker, start=start_date, end=end_date, 
+                # Use period='6mo' for more reliable fetching, then filter
+                data = yf.download(ticker, period='6mo',
                                  progress=False, auto_adjust=True)
                 if len(data) > 0 and 'Close' in data.columns:
                     series = data['Close'].copy()
                     series.name = ticker
-                    price_series.append(series)
+                    # Filter to desired date range
+                    series = series[series.index.date >= start_date.date()]
+                    series = series[series.index.date <= end_date.date()]
+                    if len(series) > 0:
+                        price_series.append(series)
+                        last_available_dates.append(series.index[-1])
             except Exception as e:
                 print(f"Error fetching {ticker}: {e}")
-        
+
         if not price_series:
             raise ValueError("No price data loaded!")
-        
+
+        # Report last available date across tickers
+        if last_available_dates:
+            dates_only = [d.date() if hasattr(d, 'date') else d for d in last_available_dates]
+            actual_last_date = max(set(dates_only))
+            print(f"  Last available price date: {actual_last_date}")
+            self._last_price_date = actual_last_date
+
         df = pd.concat(price_series, axis=1)
         df = df.ffill().bfill()
-        
+
         print(f"✓ Loaded {len(df.columns)} tickers, {len(df)} days")
         return df
     
@@ -272,6 +290,16 @@ class SignalGenerator:
                 
                 print(f"  {ticker:<8} {weight*100:>8.2f}%  ${notional_10k:>12,.2f}  {quad_str:<10}")
         
+        # Get the date of the last price data point (the date prices are from)
+        price_date = getattr(self, '_last_price_date', None)
+        if price_date is None:
+            price_date = price_data.index[-1] if len(price_data) > 0 else datetime.now().date()
+            if isinstance(price_date, pd.Timestamp):
+                price_date = price_date.date()
+
+        # Get UTC timestamp for when analysis was run
+        analysis_timestamp_utc = datetime.utcnow()
+
         return {
             'top_quadrants': (top1, top2),
             'quadrant_scores': quad_scores,
@@ -279,7 +307,9 @@ class SignalGenerator:
             'current_regime': f"{top1} + {top2}",
             'timestamp': datetime.now(),
             'total_leverage': total_leverage,
-            'atr_data': atr_data
+            'atr_data': atr_data,
+            'price_date': price_date,  # Date of the price data used
+            'analysis_timestamp_utc': analysis_timestamp_utc,  # UTC time when analysis was run
         }
 
 
@@ -291,7 +321,8 @@ if __name__ == "__main__":
     print("\n" + "="*60)
     print("SIGNAL GENERATION COMPLETE")
     print("="*60)
-    print(f"Timestamp: {signals['timestamp']}")
+    print(f"Price Date: {signals['price_date']} (data used)")
+    print(f"Analysis Time (UTC): {signals['analysis_timestamp_utc']}")
     print(f"Regime: {signals['current_regime']}")
     print(f"Total Leverage: {signals['total_leverage']:.2f}x")
     print(f"Positions: {len(signals['target_weights'])}")
