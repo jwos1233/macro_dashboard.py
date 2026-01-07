@@ -149,7 +149,7 @@
         </div>
         <!-- Current Exposure vs Historical Percentiles -->
         <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div class="text-xs font-medium text-gray-500 mb-3">Current Exposure vs Historical (2yr percentile)</div>
+            <div class="text-xs font-medium text-gray-500 mb-3">Current Regime Allocation vs Historical (2yr percentile)</div>
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3" id="percentileGrid">
                 <!-- Populated by JavaScript -->
             </div>
@@ -431,8 +431,8 @@
                         <div class="w-3 h-3 rounded-full" style="background-color: ${colors[ac]}"></div>
                         <span class="text-xs font-medium text-gray-700 dark:text-gray-300">${ac}</span>
                     </div>
-                    <div class="text-lg font-bold ${percentileColor}">${current}%</div>
-                    <div class="text-xs text-gray-500">${percentile}th percentile</div>
+                    <div class="text-2xl font-bold ${percentileColor}">${percentile}<span class="text-sm">th</span></div>
+                    <div class="text-xs text-gray-500">${current}% exposure</div>
                 `;
                 percentileGrid.appendChild(card);
             });
