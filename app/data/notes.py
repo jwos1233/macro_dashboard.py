@@ -287,9 +287,16 @@ Guidelines:
 
 FORMATTING:
 - Use markdown formatting for structure: **bold** for emphasis, ## for section headers
+- CRITICAL: Each ## header MUST be on its own line with a blank line before it and content starting on the NEXT line
+- Example of CORRECT header format:
+
+## Quick Note
+
+Opening Theme: Markets enter...
+
+- Example of WRONG format: ## Quick Note **Opening Theme:** (don't put content on same line as header)
 - Use bullet points (-) for lists where appropriate
 - Use tables where specified (Week Ahead Catalysts, Portfolio Tilt Summary)
-- Keep section headers clean and consistent (e.g., ## Quick Note, ## Regime Context)
 
 Create the morning note now based on today's date, current market conditions, latest available research, and the portfolio context provided."""
 
