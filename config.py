@@ -119,12 +119,12 @@ REGIME_POSITION_SIZES = {
     'Q4': 0.0   # 0% of capital per position (Deflation - flat)
 }
 
-# Leverage by Regime
+# Leverage by Regime (uniform across all quads)
 REGIME_LEVERAGE = {
-    'Q1': 2.0,  # 2x leverage (Goldilocks)
-    'Q2': 1.0,  # 1x leverage (Reflation - no leverage)
-    'Q3': 1.0,  # 1x leverage (Stagflation)
-    'Q4': 1.0   # 1x leverage (Deflation - no leverage)
+    'Q1': 1.5,  # 1.5x leverage (Goldilocks)
+    'Q2': 1.5,  # 1.5x leverage (Reflation)
+    'Q3': 1.5,  # 1.5x leverage (Stagflation)
+    'Q4': 1.5   # 1.5x leverage (Deflation)
 }
 
 # === NOTIFICATION CONFIGURATION ===
