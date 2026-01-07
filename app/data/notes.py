@@ -75,19 +75,19 @@ def has_todays_note() -> bool:
 def categorize_holdings(weights: dict) -> dict:
     """Map ticker holdings to categories and calculate aggregate exposures"""
     categories = {
-        'Growth Equities': ['QQQ', 'ARKK', 'IWM', 'XLC', 'XLY'],
+        'Growth Equities': ['QQQ', 'ARKK', 'IWM', 'XLC', 'XLY', 'ARKX', 'BOTZ', 'EEM'],
         'Cyclical Equities': ['XLF', 'XLI', 'XLB', 'VTV', 'IWD'],
         'Defensive Equities': ['XLU', 'XLP', 'XLV'],
         'Energy': ['XLE', 'XOP', 'FCG', 'USO'],
         'Commodities (Broad)': ['DBC', 'GCC'],
-        'Commodities (Metals)': ['LIT', 'AA', 'PALL', 'REMX', 'GLD'],
+        'Commodities (Metals)': ['LIT', 'PALL', 'REMX', 'GLD'],
         'Commodities (Ags)': ['DBA'],
         'Commodities (Uranium)': ['URA'],
         'Duration (Long)': ['TLT', 'VGLT', 'IEF'],
         'Duration (Short/TIPS)': ['TIP', 'VTIP', 'VALT'],
         'Credit (IG)': ['LQD', 'MUB'],
         'Real Assets': ['VNQ', 'PAVE'],
-        'Crypto': ['IBIT', 'ETHA']
+        'Crypto': ['BTC-USD', 'ETH-USD']
     }
 
     # Reverse lookup
@@ -154,11 +154,28 @@ def generate_note_content(signals: dict) -> Optional[Dict]:
     category_summary = format_category_summary(weights)
     scores_str = ", ".join([f"{q}: {s:.1f}%" for q, s in sorted(scores.items(), key=lambda x: x[1], reverse=True)])
 
-    prompt = f"""Daily Trading Morning Note Generator with Portfolio Context
-
-Create a concise morning note for traders based on the systematic portfolio positioning analysis below. Focus on actionable themes and how current model positioning relates to broader market dynamics.
+    prompt = f"""Please create a concise morning note for traders by researching the latest publications from major sell-side firms and funds, enhanced with systematic portfolio positioning analysis. Focus on actionable themes and how current model positioning relates to consensus views.
 
 Today's Date: {today_str}
+
+Research Sources to Check:
+Priority Sources:
+- ING FX Daily (currency analysis and cross-asset themes)
+- Danske Bank Daily (Nordic perspective and broader market themes)
+- Goldman Sachs morning research/Market Know-How
+- J.P. Morgan Weekly Market Recap and daily insights
+- Bank of America Global Research weekly
+- BlackRock Investment Institute weekly commentary
+- Charles Schwab Market Open Update and Options Market Update
+- Edward Jones Daily Market Recap
+- Morningstar market analysis
+
+Additional Sources as Available:
+- Morgan Stanley morning notes
+- Citi daily research
+- UBS morning commentary
+- Barclays daily research
+- Deutsche Bank morning notes
 
 Portfolio Context:
 - Dominant Quadrant: {top_quads[0]}
@@ -172,19 +189,19 @@ Current Portfolio Holdings (Top 10):
 Category Exposure Summary: {category_summary}
 
 Category Mapping Reference:
-- Growth Equities: QQQ, ARKK, IWM, XLC, XLY
+- Growth Equities: QQQ, ARKK, IWM, XLC, XLY, ARKX, BOTZ, EEM
 - Cyclical Equities: XLF, XLI, XLB, VTV, IWD
 - Defensive Equities: XLU, XLP, XLV
 - Energy: XLE, XOP, FCG, USO
 - Commodities (Broad): DBC, GCC
-- Commodities (Metals): LIT, AA, PALL, REMX, GLD
+- Commodities (Metals): LIT, PALL, REMX, GLD
 - Commodities (Ags): DBA
 - Commodities (Uranium): URA
 - Duration (Long): TLT, VGLT, IEF
 - Duration (Short/TIPS): TIP, VTIP, VALT
 - Credit (IG): LQD, MUB
 - Real Assets: VNQ, PAVE
-- Crypto: IBIT, ETHA
+- Crypto: BTC-USD, ETH-USD
 
 Quadrant Definitions:
 - Q1 (Goldilocks): Growth↑, Inflation↓ – favor growth assets, duration, crypto
@@ -192,42 +209,88 @@ Quadrant Definitions:
 - Q3 (Stagflation): Growth↓, Inflation↑ – favor energy, commodities, TIPS, defensives, crypto
 - Q4 (Deflation): Growth↓, Inflation↓ – favor long duration, IG credit, defensives, USD
 
-Please generate the following sections:
+Content Structure:
 
-**Quick Note (Marketing Summary)**
-A short-form summary (100-150 words max) containing:
-- Opening Theme (2-3 sentences): The single most important market narrative for the current regime
-- Portfolio Snapshot (1-2 sentences): Aggregate category exposures + net leverage
-- Top 3 Holdings Overview (1 bullet each): For three largest positions, provide ticker, thesis, and key catalyst/risk
+**Quick Note (1-Minute Marketing Summary)**
+A short-form summary for marketing purposes containing:
+- Opening Theme (2-3 sentences): The single most important market narrative driving cross-asset moves right now
+- Portfolio Snapshot (1-2 sentences): Aggregate category exposures as percentages + net leverage figure
+- Top 3 Holdings Overview (1 bullet each): For the three largest positions, provide ticker, consensus view, and key catalyst/risk in one concise sentence each
+Format: Keep to ~100-150 words maximum. Use bullet points for the top 3 holdings. This should be scannable and punchy.
 
-**Regime Context**
-- Current regime characteristics and what this dual-quad environment typically favors
-- Cross-quad dynamics: tensions or synergies between dominant and secondary positioning
+**Opening Theme (1-2 sentences)**
+Identify the single most important market narrative driving cross-asset moves right now. Frame with today's date.
 
-**Position Analysis**
-For the top 5 holdings, write a brief paragraph covering:
-1. The macro thesis supporting the position
-2. Whether the position aligns with the current quadrant regime
-3. Key catalyst or risk to monitor
+**Quadrant Regime Context**
+- Current Regime: State the dominant and secondary quadrants
+- Regime Characteristics: Brief description of what this dual-quad environment typically favors
+- Cross-Quad Dynamics: Note any tensions or synergies between dominant and secondary quad positioning
 
-**Risk Considerations**
+**Key Market Drivers (3-4 bullet points)**
+- Focus on themes affecting multiple asset classes
+- Include any significant events from the past week that still matter
+- Highlight what's driving correlations/divergences between assets
+- Connect drivers to quadrant regime where relevant
+
+**Asset Class Outlook (thematic, not siloed)**
+Weave together insights on:
+- Rates/Fed Policy – What's priced in vs reality, curve positioning ideas
+- USD – Key drivers, FX crosses with best risk/reward
+- Equities – Sector rotation themes, growth vs value vs cyclicals vs defensives
+- Commodities – Energy, metals, ags dynamics; real rates impact
+- Credit – IG vs HY, spread dynamics
+- Crypto – Regime context, correlation dynamics
+
+**Portfolio Positioning vs. Consensus**
+Analyze the portfolio against sell-side themes:
+
+Current Portfolio Tilt Summary:
+- Aggregate the top 10 holdings into category exposures
+- Present as a clean table showing Category, Weight, and Holdings
+- State the portfolio's net leverage
+
+Position-Level Analysis:
+For each holding (or grouped by theme where appropriate), write a short paragraph that covers: (1) the consensus view from sell-side research, (2) whether the portfolio is aligned, overweight, underweight, or contrarian relative to consensus, and (3) the key catalyst or risk for the position. Do not repeat the weighting percentage as this has already been stated in the summary table.
+Use bracketed citation numbers [1], [2], [3] etc. to reference sources within the text.
+
+**Aligned Sell-Side Trade Ideas (2-3 specific actionable suggestions)**
+Review all researched publications and summarise the specific trade ideas pitched by sell-side analysts, selecting only those that align with the current quadrant framework. For each idea, write a short paragraph that covers: the specific trade, the sell-side rationale (noting if multiple publications recommend the same trade), how it fits the current quadrant regime, entry/target/stop levels where provided, and how it would impact existing portfolio tilts.
+Use bracketed citation numbers [1], [2], [3] etc. to reference sources within the text.
+If no suitable sell-side ideas fit the quadrant framework, explicitly state this and explain why available recommendations don't align with current regime positioning.
+
+**Emerging Sell-Side Trade Ideas (2-3 specific actionable suggestions)**
+Review ALL researched publications and summarise the most interesting and actionable trade ideas pitched by sell-side analysts that were not touched on above. The scope should be broader—include any compelling trades flagged in research, whether or not they align with current portfolio holdings or the quadrant framework.
+
+**Risk Management Considerations**
 - Catalysts that could challenge current quadrant regime
-- What would trigger rotation to a different quad
-- Specific risks to concentrated positions
+- What would trigger a rotation from dominant to secondary quad (or new quad entirely)
+- Specific risks to concentrated positions in the portfolio
+
+**Week Ahead Catalysts**
+Key events/data that could shift the narrative or trigger regime changes, with specific relevance to current holdings noted (table format preferred)
+
+**Sources**
+List all referenced sources with their corresponding citation numbers.
 
 Guidelines:
-- Length: 500-700 words total
-- Tone: Professional, direct, written for experienced traders; newsletter style (refer to "the portfolio" not "your portfolio")
-- Focus: Prioritize what's most relevant to current positioning
-- Do NOT include section headers in the output - write as flowing prose with clear paragraph breaks
-- Do NOT use phrases like "I think" - be declarative
-- Do NOT use any markdown formatting (no **bold**, no *italics*, no bullet points) - write in plain prose paragraphs only
-- Start directly with the Quick Note content"""
+- Length: Keep total note to 600-800 words maximum (excluding sources section)
+- Tone: Professional but direct, written for experienced traders; newsletter style (refer to "the portfolio" not "your portfolio")
+- Objectivity: Distinguish between what the portfolio is doing vs. what consensus thinks
+- Focus: Prioritize what's most relevant today – not every asset class needs coverage every day
+- Actionability: Every insight should suggest either a trade idea or risk management consideration
+- Synthesis: Connect dots across publications and portfolio positioning to identify emerging themes or risks
+- Timing: Consider both London and NY session implications
+- Honesty on Divergences: When the portfolio diverges from consensus, present both cases fairly – don't assume the portfolio is right
+- Leverage Clarity: When presenting category weights that sum above 100%, reference the net leverage figure in the Portfolio Tilt Summary
+- Paragraph Format: Use flowing paragraphs (not bullet points) for Position-Level Analysis and Sell-Side Trade Ideas sections
+- Citations: Use bracketed numbers [1], [2], [3] in-text and compile all sources in the Sources section at the end
+
+Create the morning note now based on today's date, current market conditions, latest available research, and the portfolio context provided."""
 
     try:
         message = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=1500,
+            max_tokens=4000,
             messages=[
                 {"role": "user", "content": prompt}
             ]
