@@ -125,7 +125,7 @@
                             {{ "%.1f"|format(month.drawdown) }}%
                         </td>
                         <td class="py-3 hidden sm:table-cell text-gray-600 dark:text-gray-300">
-                            {{ "%.2f"|format(month.sharpe) }}
+                            {% if month.sharpe is none %}-{% else %}{{ "%.2f"|format(month.sharpe) }}{% endif %}
                         </td>
                     </tr>
                     {% endfor %}
