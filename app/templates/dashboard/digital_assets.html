@@ -32,11 +32,13 @@
                 <p class="text-4xl font-bold
                     {% if btc_data.current_position == 'Overweight' %}text-green-400
                     {% elif btc_data.current_position == 'Neutral' %}text-yellow-400
+                    {% elif btc_data.current_position == 'Short' %}text-purple-400
                     {% else %}text-red-400{% endif %}">
                     {{ btc_data.current_position }}
                 </p>
                 <p class="text-sm text-gray-300 mt-1">
                     {% if btc_data.current_position == 'Overweight' %}200% Allocation
+                    {% elif btc_data.current_position == 'Short' %}-100% Allocation
                     {% else %}0% Allocation{% endif %}
                 </p>
             </div>
@@ -53,18 +55,22 @@
     <!-- Allocation Rules Reference -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
         <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Allocation Rules</h3>
-        <div class="grid grid-cols-3 gap-4 text-sm">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div class="flex items-center space-x-2">
                 <span class="w-4 h-4 rounded bg-green-500"></span>
                 <span class="text-gray-700 dark:text-gray-300"><strong>Overweight</strong>: Q1 in Top 2 + Above EMA = 200%</span>
             </div>
             <div class="flex items-center space-x-2">
                 <span class="w-4 h-4 rounded bg-yellow-500"></span>
-                <span class="text-gray-700 dark:text-gray-300"><strong>Neutral</strong>: Q1 in Top 2 but Below EMA = 0%</span>
+                <span class="text-gray-700 dark:text-gray-300"><strong>Neutral</strong>: Q1 in Top 2 + Below EMA = 0%</span>
             </div>
             <div class="flex items-center space-x-2">
                 <span class="w-4 h-4 rounded bg-red-500"></span>
-                <span class="text-gray-700 dark:text-gray-300"><strong>Underweight</strong>: Q1 not in Top 2 = 0%</span>
+                <span class="text-gray-700 dark:text-gray-300"><strong>Underweight</strong>: Q1 not in Top 2 + Above EMA = 0%</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="w-4 h-4 rounded bg-purple-500"></span>
+                <span class="text-gray-700 dark:text-gray-300"><strong>Short</strong>: Q1 not in Top 2 + Below EMA = -100%</span>
             </div>
         </div>
     </div>
@@ -136,13 +142,14 @@
     <!-- Position Distribution -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Position Distribution</h3>
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             {% for pos_type, pct in btc_data.position_breakdown.items() %}
             <div class="text-center">
                 <div class="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden mb-2">
                     <div class="h-full
                         {% if pos_type == 'Overweight' %}bg-green-500
                         {% elif pos_type == 'Neutral' %}bg-yellow-500
+                        {% elif pos_type == 'Short' %}bg-purple-500
                         {% else %}bg-red-500{% endif %}"
                         style="width: {{ pct }}%"></div>
                 </div>
@@ -165,7 +172,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const positionColors = {
         'Overweight': 'rgba(34, 197, 94, 0.3)',   // green
         'Neutral': 'rgba(234, 179, 8, 0.3)',      // yellow
-        'Underweight': 'rgba(239, 68, 68, 0.3)'  // red
+        'Underweight': 'rgba(239, 68, 68, 0.3)', // red
+        'Short': 'rgba(168, 85, 247, 0.3)'       // purple
     };
 
     // BTC Price Chart with colored background
