@@ -32,7 +32,7 @@
                 <p class="text-4xl font-bold
                     {% if btc_data.current_position == 'Overweight' %}text-green-400
                     {% elif btc_data.current_position == 'Neutral' %}text-yellow-400
-                    {% elif btc_data.current_position == 'Short' %}text-purple-400
+                    {% elif btc_data.current_position == 'Underweight' %}text-purple-400
                     {% else %}text-red-400{% endif %}">
                     {{ btc_data.current_position }}
                 </p>
@@ -65,11 +65,11 @@
                 <span class="text-gray-700 dark:text-gray-300"><strong>Neutral</strong>: Q1 in Top 2 + Below EMA = 0%</span>
             </div>
             <div class="flex items-center space-x-2">
-                <span class="w-4 h-4 rounded bg-red-500"></span>
+                <span class="w-4 h-4 rounded bg-purple-500"></span>
                 <span class="text-gray-700 dark:text-gray-300"><strong>Underweight</strong>: Q1 not in Top 2 + Above EMA = 0%</span>
             </div>
             <div class="flex items-center space-x-2">
-                <span class="w-4 h-4 rounded bg-purple-500"></span>
+                <span class="w-4 h-4 rounded bg-red-500"></span>
                 <span class="text-gray-700 dark:text-gray-300"><strong>Short</strong>: Q1 not in Top 2 + Below EMA = -100%</span>
             </div>
         </div>
@@ -149,7 +149,7 @@
                     <div class="h-full
                         {% if pos_type == 'Overweight' %}bg-green-500
                         {% elif pos_type == 'Neutral' %}bg-yellow-500
-                        {% elif pos_type == 'Short' %}bg-purple-500
+                        {% elif pos_type == 'Underweight' %}bg-purple-500
                         {% else %}bg-red-500{% endif %}"
                         style="width: {{ pct }}%"></div>
                 </div>
@@ -172,8 +172,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const positionColors = {
         'Overweight': 'rgba(34, 197, 94, 0.3)',   // green
         'Neutral': 'rgba(234, 179, 8, 0.3)',      // yellow
-        'Underweight': 'rgba(239, 68, 68, 0.3)', // red
-        'Short': 'rgba(168, 85, 247, 0.3)'       // purple
+        'Underweight': 'rgba(168, 85, 247, 0.3)', // purple
+        'Short': 'rgba(239, 68, 68, 0.3)'        // red
     };
 
     // BTC Price Chart with colored background
