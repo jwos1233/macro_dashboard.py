@@ -733,8 +733,7 @@ def run_btc_framework_backtest() -> dict:
     Run BTC-only backtest based on quad framework.
 
     Allocation rules:
-    - Q1 Primary + above EMA → 200% (Overweight)
-    - Q1 Secondary + above EMA → 200% (Long)
+    - Q1 in top 2 + above EMA → 200% (Overweight)
     - Q1 in top 2 but below EMA → 0% (Neutral)
     - Q1 not in top 2 → 0% (Underweight)
     """
@@ -857,8 +856,8 @@ def run_btc_framework_backtest() -> dict:
                     target_allocation = 0.0
             elif top2 == 'Q1':
                 if above_ema:
-                    position = 'Long'
-                    target_allocation = 2.0  # 200% (same as Overweight)
+                    position = 'Overweight'
+                    target_allocation = 2.0  # 200%
                 else:
                     position = 'Neutral'
                     target_allocation = 0.0
@@ -936,7 +935,6 @@ def run_btc_framework_backtest() -> dict:
         position_counts = positions.value_counts()
         position_pcts = {
             'Overweight': position_counts.get('Overweight', 0) / len(positions) * 100,
-            'Long': position_counts.get('Long', 0) / len(positions) * 100,
             'Neutral': position_counts.get('Neutral', 0) / len(positions) * 100,
             'Underweight': position_counts.get('Underweight', 0) / len(positions) * 100,
         }
