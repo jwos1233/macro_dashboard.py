@@ -592,3 +592,132 @@ def reload_backtest_results() -> dict:
     _backtest_cache = None
     _backtest_cache_time = None
     return load_backtest_results()
+
+
+# Cache for EMA window comparison
+_ema_comparison_cache = None
+_ema_comparison_cache_time = None
+
+
+def run_ema_window_comparison() -> dict:
+    """
+    Run backtests with different EMA smoothing windows to find optimal period.
+    Tests: 5, 10, 15, 20, 30, 50 day EMA windows.
+    Results are cached for the same duration as regular backtest.
+    """
+    global _ema_comparison_cache, _ema_comparison_cache_time
+
+    # Check cache
+    if _ema_comparison_cache is not None and _ema_comparison_cache_time is not None:
+        cache_age = datetime.now() - _ema_comparison_cache_time
+        if cache_age < timedelta(hours=CACHE_DURATION_HOURS):
+            return _ema_comparison_cache
+
+    try:
+        print("=" * 60, flush=True)
+        print("RUNNING EMA WINDOW COMPARISON", flush=True)
+        print("=" * 60, flush=True)
+
+        from quad_portfolio_backtest import QuadrantPortfolioBacktest
+
+        # Setup parameters
+        INITIAL_CAPITAL = 50000
+        BACKTEST_YEARS = 5
+        MOMENTUM_DAYS = 50
+
+        # EMA windows to test
+        EMA_WINDOWS = [5, 10, 15, 20, 30, 50]
+
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=BACKTEST_YEARS * 365 + 100)
+
+        results = []
+        best_sharpe = -999
+        best_window = None
+
+        for i, ema_window in enumerate(EMA_WINDOWS):
+            print(f"\n[{i+1}/{len(EMA_WINDOWS)}] Testing EMA window = {ema_window}...", flush=True)
+
+            backtest = QuadrantPortfolioBacktest(
+                start_date=start_date,
+                end_date=end_date,
+                initial_capital=INITIAL_CAPITAL,
+                momentum_days=MOMENTUM_DAYS,
+                max_positions=10,
+                atr_stop_loss=2.0,
+                atr_period=14,
+                ema_smoothing_period=ema_window
+            )
+            bt_results = backtest.run_backtest()
+
+            # Count regime changes
+            regime_changes = 0
+            if hasattr(backtest, 'quad_history') and backtest.quad_history is not None:
+                prev_top2 = None
+                for idx in backtest.quad_history.index:
+                    current_top2 = (
+                        backtest.quad_history.loc[idx, 'Top1'],
+                        backtest.quad_history.loc[idx, 'Top2']
+                    )
+                    if prev_top2 is not None and current_top2 != prev_top2:
+                        regime_changes += 1
+                    prev_top2 = current_top2
+
+            # Build equity curve
+            equity_curve = []
+            if backtest.portfolio_value is not None:
+                for date, value in backtest.portfolio_value.items():
+                    equity_curve.append({
+                        'date': date.strftime('%Y-%m-%d'),
+                        'value': float(value)
+                    })
+
+            result = {
+                'ema_window': ema_window,
+                'total_return': bt_results.get('total_return', 0),
+                'annual_return': bt_results.get('annual_return', 0),
+                'sharpe': bt_results.get('sharpe', 0),
+                'max_drawdown': bt_results.get('max_drawdown', 0),
+                'volatility': bt_results.get('annual_vol', 0),
+                'final_value': bt_results.get('final_value', INITIAL_CAPITAL),
+                'regime_changes': regime_changes,
+                'equity_curve': equity_curve,
+            }
+            results.append(result)
+
+            if bt_results.get('sharpe', 0) > best_sharpe:
+                best_sharpe = bt_results.get('sharpe', 0)
+                best_window = ema_window
+
+            print(f"  → Return: {bt_results.get('total_return', 0):.1f}%, "
+                  f"Sharpe: {bt_results.get('sharpe', 0):.2f}, "
+                  f"Regime Changes: {regime_changes}", flush=True)
+
+        _ema_comparison_cache = {
+            'results': results,
+            'best_window': best_window,
+            'best_sharpe': best_sharpe,
+            'parameters': {
+                'initial_capital': INITIAL_CAPITAL,
+                'backtest_years': BACKTEST_YEARS,
+                'momentum_days': MOMENTUM_DAYS,
+                'windows_tested': EMA_WINDOWS,
+            },
+            'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        }
+        _ema_comparison_cache_time = datetime.now()
+
+        print(f"\n✓ Comparison complete! Best EMA window: {best_window} (Sharpe: {best_sharpe:.2f})", flush=True)
+
+        return _ema_comparison_cache
+
+    except Exception as e:
+        print(f"Error running EMA comparison: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+
+        return {
+            'results': [],
+            'error': str(e),
+            'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        }

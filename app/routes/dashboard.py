@@ -429,3 +429,22 @@ async def performance_page(request: Request):
         "data_source": backtest.get('data_source', 'unknown'),
         "generated_at": backtest.get('generated_at'),
     })
+
+
+@router.get("/dashboard/backtest-lab")
+async def backtest_lab_page(request: Request):
+    """Backtest Lab - Compare different EMA smoothing windows"""
+    from app.data import run_ema_window_comparison
+
+    signals = get_signals()
+
+    # Run EMA window comparison
+    comparison = run_ema_window_comparison()
+
+    return templates.TemplateResponse("dashboard/backtest_lab.html", {
+        "request": request,
+        "page": "backtest-lab",
+        "signals": signals,
+        "comparison": comparison,
+        "quad_descriptions": QUADRANT_DESCRIPTIONS,
+    })
