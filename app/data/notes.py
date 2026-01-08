@@ -314,7 +314,19 @@ Create the morning note now based on today's date, current market conditions, la
             }]
         )
 
-        content = message.content[0].text.strip()
+        # Extract text content from response - handle multi-block responses from web search
+        # The response may contain tool_use, tool_result, and text blocks
+        # We want the final/main text block with the actual note content
+        content = None
+        for block in message.content:
+            if hasattr(block, 'text'):
+                # Get the longest text block (the actual note, not preamble)
+                if content is None or len(block.text) > len(content):
+                    content = block.text.strip()
+
+        if not content:
+            print("No text content found in response")
+            return None
 
         # Generate a title based on regime
         title = generate_title(regime, scores)
