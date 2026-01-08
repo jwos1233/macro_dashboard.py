@@ -734,7 +734,7 @@ def run_btc_framework_backtest() -> dict:
 
     Allocation rules:
     - Q1 Primary + above EMA → 200% (Overweight)
-    - Q1 Secondary + above EMA → 100% (Long)
+    - Q1 Secondary + above EMA → 200% (Long)
     - Q1 in top 2 but below EMA → 0% (Neutral)
     - Q1 not in top 2 → 0% (Underweight)
     """
@@ -858,7 +858,7 @@ def run_btc_framework_backtest() -> dict:
             elif top2 == 'Q1':
                 if above_ema:
                     position = 'Long'
-                    target_allocation = 1.0  # 100%
+                    target_allocation = 2.0  # 200% (same as Overweight)
                 else:
                     position = 'Neutral'
                     target_allocation = 0.0
