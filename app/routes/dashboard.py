@@ -448,3 +448,22 @@ async def backtest_lab_page(request: Request):
         "comparison": comparison,
         "quad_descriptions": QUADRANT_DESCRIPTIONS,
     })
+
+
+@router.get("/dashboard/digital-assets")
+async def digital_assets_page(request: Request):
+    """Digital Assets Framework - BTC allocation based on quad regime"""
+    from app.data import run_btc_framework_backtest
+
+    signals = get_signals()
+
+    # Run BTC framework backtest
+    btc_data = run_btc_framework_backtest()
+
+    return templates.TemplateResponse("dashboard/digital_assets.html", {
+        "request": request,
+        "page": "digital-assets",
+        "signals": signals,
+        "btc_data": btc_data,
+        "quad_descriptions": QUADRANT_DESCRIPTIONS,
+    })

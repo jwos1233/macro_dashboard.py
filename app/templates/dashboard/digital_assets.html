@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+
+{% block title %}Digital Assets - Epoch Macro{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Digital Asset Framework</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">BTC allocation based on quad regime with EMA trend filter</p>
+        </div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+            {% if btc_data.generated_at %}
+            Generated: {{ btc_data.generated_at }}
+            {% endif %}
+        </div>
+    </div>
+
+    {% if btc_data.error %}
+    <!-- Error State -->
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+        <p class="text-red-800 dark:text-red-200">Error running backtest: {{ btc_data.error }}</p>
+    </div>
+    {% else %}
+
+    <!-- Current Signal Card -->
+    <div class="bg-navy dark:bg-gray-800 rounded-lg shadow p-6 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold mb-1">Current Position</h3>
+                <p class="text-4xl font-bold
+                    {% if btc_data.current_position == 'Overweight' %}text-green-400
+                    {% elif btc_data.current_position == 'Long' %}text-blue-400
+                    {% elif btc_data.current_position == 'Neutral' %}text-yellow-400
+                    {% else %}text-red-400{% endif %}">
+                    {{ btc_data.current_position }}
+                </p>
+                <p class="text-sm text-gray-300 mt-1">
+                    {% if btc_data.current_position == 'Overweight' %}200% Allocation
+                    {% elif btc_data.current_position == 'Long' %}100% Allocation
+                    {% else %}0% Allocation{% endif %}
+                </p>
+            </div>
+            <div class="text-right">
+                <p class="text-sm text-gray-300">BTC Price</p>
+                {% set last_price = btc_data.chart_data[-1].btc_price if btc_data.chart_data else 0 %}
+                {% set last_ema = btc_data.chart_data[-1].ema if btc_data.chart_data else 0 %}
+                <p class="text-3xl font-bold">${{ "{:,.0f}".format(last_price) }}</p>
+                <p class="text-sm text-gray-300 mt-2">EMA ({{ btc_data.parameters.ema_period or 50 }}d): ${{ "{:,.0f}".format(last_ema) }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Allocation Rules Reference -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Allocation Rules</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div class="flex items-center space-x-2">
+                <span class="w-4 h-4 rounded bg-green-500"></span>
+                <span class="text-gray-700 dark:text-gray-300"><strong>Overweight</strong>: Q1 Primary + Above EMA = 200%</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="w-4 h-4 rounded bg-blue-500"></span>
+                <span class="text-gray-700 dark:text-gray-300"><strong>Long</strong>: Q1 Secondary + Above EMA = 100%</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="w-4 h-4 rounded bg-yellow-500"></span>
+                <span class="text-gray-700 dark:text-gray-300"><strong>Neutral</strong>: Q1 in Top 2 but Below EMA = 0%</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="w-4 h-4 rounded bg-red-500"></span>
+                <span class="text-gray-700 dark:text-gray-300"><strong>Underweight</strong>: Q1 not in Top 2 = 0%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Comparison Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Strategy Return</p>
+            <p class="text-2xl font-bold {% if btc_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
+                {{ "%.1f"|format(btc_data.strategy.total_return or 0) }}%
+            </p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Buy & Hold Return</p>
+            <p class="text-2xl font-bold {% if btc_data.buyhold.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
+                {{ "%.1f"|format(btc_data.buyhold.total_return or 0) }}%
+            </p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Strategy Sharpe</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ "%.2f"|format(btc_data.strategy.sharpe or 0) }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Buy & Hold Sharpe</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ "%.2f"|format(btc_data.buyhold.sharpe or 0) }}</p>
+        </div>
+    </div>
+
+    <!-- Additional Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Strategy Max DD</p>
+            <p class="text-xl font-bold text-warning">{{ "%.1f"|format(btc_data.strategy.max_drawdown or 0) }}%</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Buy & Hold Max DD</p>
+            <p class="text-xl font-bold text-warning">{{ "%.1f"|format(btc_data.buyhold.max_drawdown or 0) }}%</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Strategy Volatility</p>
+            <p class="text-xl font-bold text-gray-900 dark:text-white">{{ "%.1f"|format(btc_data.strategy.volatility or 0) }}%</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Position Changes</p>
+            <p class="text-xl font-bold text-gray-900 dark:text-white">{{ btc_data.regime_history|length }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Final Value (${{ "{:,.0f}".format(btc_data.parameters.initial_capital or 10000) }} start)</p>
+            <p class="text-xl font-bold text-gray-900 dark:text-white">${{ "{:,.0f}".format(btc_data.strategy.final_value or 10000) }}</p>
+        </div>
+    </div>
+
+    <!-- BTC Chart with Position Overlay -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">BTC Price with Position Overlay</h3>
+        <div class="h-96">
+            <canvas id="btcChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Equity Curves Comparison -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Equity Curve: Strategy vs Buy & Hold</h3>
+        <div class="h-80">
+            <canvas id="equityChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Position Distribution -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Position Distribution</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {% for pos_type, pct in btc_data.position_breakdown.items() %}
+            <div class="text-center">
+                <div class="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden mb-2">
+                    <div class="h-full
+                        {% if pos_type == 'Overweight' %}bg-green-500
+                        {% elif pos_type == 'Long' %}bg-blue-500
+                        {% elif pos_type == 'Neutral' %}bg-yellow-500
+                        {% else %}bg-red-500{% endif %}"
+                        style="width: {{ pct }}%"></div>
+                </div>
+                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ pos_type }}</p>
+                <p class="text-2xl font-bold text-gray-700 dark:text-gray-300">{{ "%.1f"|format(pct) }}%</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if not btc_data.error and btc_data.chart_data %}
+    const priceData = {{ btc_data.chart_data | tojson }};
+
+    // Position color mapping
+    const positionColors = {
+        'Overweight': 'rgba(34, 197, 94, 0.3)',   // green
+        'Long': 'rgba(59, 130, 246, 0.3)',        // blue
+        'Neutral': 'rgba(234, 179, 8, 0.3)',      // yellow
+        'Underweight': 'rgba(239, 68, 68, 0.3)'  // red
+    };
+
+    // BTC Price Chart with colored background
+    const btcCtx = document.getElementById('btcChart').getContext('2d');
+
+    // Create background color array based on positions
+    const backgroundColors = priceData.map(d => positionColors[d.position] || 'rgba(128, 128, 128, 0.1)');
+
+    // Group consecutive same-position periods for background
+    const annotations = [];
+    let currentPos = null;
+    let startIdx = 0;
+
+    priceData.forEach((d, idx) => {
+        if (d.position !== currentPos) {
+            if (currentPos !== null && idx > 0) {
+                annotations.push({
+                    type: 'box',
+                    xMin: priceData[startIdx].date,
+                    xMax: priceData[idx - 1].date,
+                    backgroundColor: positionColors[currentPos],
+                    borderWidth: 0
+                });
+            }
+            currentPos = d.position;
+            startIdx = idx;
+        }
+    });
+    // Add last segment
+    if (currentPos !== null) {
+        annotations.push({
+            type: 'box',
+            xMin: priceData[startIdx].date,
+            xMax: priceData[priceData.length - 1].date,
+            backgroundColor: positionColors[currentPos],
+            borderWidth: 0
+        });
+    }
+
+    new Chart(btcCtx, {
+        type: 'line',
+        data: {
+            labels: priceData.map(d => d.date),
+            datasets: [
+                {
+                    label: 'BTC Price',
+                    data: priceData.map(d => d.btc_price),
+                    borderColor: '#D4A857',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    fill: false,
+                    pointRadius: 0,
+                    tension: 0.1,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'EMA',
+                    data: priceData.map(d => d.ema),
+                    borderColor: '#6B7280',
+                    backgroundColor: 'transparent',
+                    borderWidth: 1,
+                    borderDash: [5, 5],
+                    fill: false,
+                    pointRadius: 0,
+                    tension: 0.1,
+                    yAxisID: 'y'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#374151'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const idx = context.dataIndex;
+                            const position = priceData[idx].position;
+                            if (context.dataset.label === 'BTC Price') {
+                                return 'BTC: $' + context.parsed.y.toLocaleString() + ' (' + position + ')';
+                            }
+                            return context.dataset.label + ': $' + context.parsed.y.toLocaleString();
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'category',
+                    ticks: {
+                        maxTicksLimit: 12,
+                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
+                    },
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    type: 'logarithmic',
+                    position: 'left',
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        },
+                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
+                    },
+                    grid: {
+                        color: document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+                    }
+                }
+            }
+        },
+        plugins: [{
+            id: 'customBackground',
+            beforeDraw: function(chart) {
+                const ctx = chart.ctx;
+                const chartArea = chart.chartArea;
+                const xAxis = chart.scales.x;
+                const yAxis = chart.scales.y;
+
+                let currentPos = null;
+                let startX = null;
+
+                priceData.forEach((d, idx) => {
+                    const x = xAxis.getPixelForValue(d.date);
+
+                    if (d.position !== currentPos) {
+                        if (currentPos !== null && startX !== null) {
+                            ctx.fillStyle = positionColors[currentPos];
+                            ctx.fillRect(startX, chartArea.top, x - startX, chartArea.bottom - chartArea.top);
+                        }
+                        currentPos = d.position;
+                        startX = x;
+                    }
+                });
+                // Fill last segment
+                if (currentPos !== null && startX !== null) {
+                    ctx.fillStyle = positionColors[currentPos];
+                    ctx.fillRect(startX, chartArea.top, chartArea.right - startX, chartArea.bottom - chartArea.top);
+                }
+            }
+        }]
+    });
+
+    // Equity Curves Chart (using data from priceData which contains portfolio_value and buyhold_value)
+    const equityCtx = document.getElementById('equityChart').getContext('2d');
+    new Chart(equityCtx, {
+        type: 'line',
+        data: {
+            labels: priceData.map(d => d.date),
+            datasets: [
+                {
+                    label: 'Quad Framework',
+                    data: priceData.map(d => d.portfolio_value),
+                    borderColor: '#D4A857',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    fill: false,
+                    pointRadius: 0,
+                    tension: 0.1
+                },
+                {
+                    label: 'Buy & Hold',
+                    data: priceData.map(d => d.buyhold_value),
+                    borderColor: '#6B7280',
+                    backgroundColor: 'transparent',
+                    borderWidth: 1.5,
+                    fill: false,
+                    pointRadius: 0,
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#374151'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': $' + context.parsed.y.toLocaleString(undefined, {
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0
+                            });
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'category',
+                    ticks: {
+                        maxTicksLimit: 12,
+                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
+                    },
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    type: 'logarithmic',
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        },
+                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
+                    },
+                    grid: {
+                        color: document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}
