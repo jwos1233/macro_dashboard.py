@@ -50,7 +50,7 @@ Q1_LEVERAGE_MULTIPLIER = 1.0   # No multiplier - same leverage for all quads
 
 # Manual overrides for assets that must be fetched even if not in current
 # allocation map (keeps backtests aligned with latest production universe).
-ADDITIONAL_BACKTEST_TICKERS = ['LIT', 'AA', 'PALL', 'VALT']
+ADDITIONAL_BACKTEST_TICKERS = ['LIT', 'VALT']  # AA, PALL temp disabled for testing
 
 class QuadrantPortfolioBacktest:
     def __init__(self, start_date, end_date, initial_capital=50000,

@@ -166,13 +166,13 @@ QUAD_ALLOCATIONS = {
         'DBC': 0.35 * 0.20,      # 20% of 35% Commodities
         'GCC': 0.35 * 0.20,      # 20% of 35% Commodities
         'LIT': 0.35 * 0.10,      # 10% of 35% Commodities (Lithium)
-        'PALL': 0.35 * 0.10,     # 10% of 35% Commodities (Palladium)
+        # 'PALL': 0.35 * 0.10,     # 10% of 35% Commodities (Palladium) - TEMP DISABLED
         'XLF': 0.30 * 0.333,     # 33% of 30% Cyclicals
         'XLI': 0.30 * 0.333,     # 33% of 30% Cyclicals
         'XLB': 0.30 * 0.334,     # 34% of 30% Cyclicals
         'USO': 0.30 * 0.334,     # 34% of 30% Cyclicals
         'XOP': 0.15 * 0.333,     # 33% of 15% Energy
-        'AA': 0.15 * 0.333,      # 33% of 15% Energy (Alcoa)
+        # 'AA': 0.15 * 0.333,      # 33% of 15% Energy (Alcoa) - TEMP DISABLED
         'FCG': 0.15 * 0.333,     # 33% of 15% Energy
         'VNQ': 0.10 * 0.50,      # 50% of 10% Real Assets
         'PAVE': 0.10 * 0.50,     # 50% of 10% Real Assets
@@ -191,7 +191,7 @@ QUAD_ALLOCATIONS = {
         'REMX': 0.30 * 0.12,     # 12% of 30% Commodities
         'URA': 0.30 * 0.12,      # 12% of 30% Commodities (Uranium)
         'LIT': 0.30 * 0.10,      # 10% of 30% Commodities (Lithium)
-        'PALL': 0.30 * 0.10,     # 10% of 30% Commodities (Palladium)
+        # 'PALL': 0.30 * 0.10,     # 10% of 30% Commodities (Palladium) - TEMP DISABLED
         'TIP': 0.20 * 0.50,      # 50% of 20% TIPS
         'VTIP': 0.20 * 0.50,     # 50% of 20% TIPS
         'VNQ': 0.10 * 0.50,      # 50% of 10% Real Assets
