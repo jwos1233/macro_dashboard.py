@@ -198,6 +198,7 @@ QUAD_ALLOCATIONS = {
         'PAVE': 0.10 * 0.50,     # 50% of 10% Real Assets
         'XLV': 0.15 * 0.333,     # 33% of 15% Equities
         'XLU': 0.15 * 0.333,     # 33% of 15% Equities
+        'BTC-USD': 0.10 * 1.0,   # 10% Crypto (Bitcoin)
     },
     'Q4': {
         'VGLT': 0.50 * 0.50,     # 50% of 50% Long Duration
