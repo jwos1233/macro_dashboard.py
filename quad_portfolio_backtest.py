@@ -42,7 +42,7 @@ import pandas as pd
 import yfinance as yf
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
-from config import QUAD_ALLOCATIONS, QUADRANT_DESCRIPTIONS
+from config import QUAD_ALLOCATIONS, QUAD_INDICATORS, QUADRANT_DESCRIPTIONS
 
 # Backtest leverage controls
 BASE_QUAD_LEVERAGE = 1.5       # 1.5x exposure for all quads (uniform)
@@ -78,8 +78,12 @@ class QuadrantPortfolioBacktest:
     def fetch_data(self):
         """Download price data for all tickers (Close for signals, Open for execution)"""
         all_tickers = []
+        # Include allocation tickers (for trading)
         for quad_assets in QUAD_ALLOCATIONS.values():
             all_tickers.extend(quad_assets.keys())
+        # Include indicator tickers (for regime scoring)
+        for indicators in QUAD_INDICATORS.values():
+            all_tickers.extend(indicators)
         all_tickers.extend(ADDITIONAL_BACKTEST_TICKERS)
         all_tickers = sorted(set(all_tickers))
         
@@ -155,20 +159,20 @@ class QuadrantPortfolioBacktest:
             self.atr_data = daily_returns.rolling(window=self.atr_period).mean() * self.price_data
     
     def calculate_quad_scores(self):
-        """Calculate momentum scores for each quadrant"""
-        print(f"\nCalculating {self.momentum_days}-day momentum scores...")
-        
+        """Calculate momentum scores for each quadrant using QUAD_INDICATORS"""
+        print(f"\nCalculating {self.momentum_days}-day momentum scores (using QUAD_INDICATORS)...")
+
         # Calculate momentum for all assets
         momentum = self.price_data.pct_change(self.momentum_days)
-        
-        # Score each quadrant by average momentum of its assets
+
+        # Score each quadrant by average momentum of its indicator assets
         quad_scores = pd.DataFrame(index=momentum.index)
-        
-        for quad, assets in QUAD_ALLOCATIONS.items():
-            quad_tickers = [t for t in assets.keys() if t in momentum.columns]
+
+        for quad, indicators in QUAD_INDICATORS.items():
+            quad_tickers = [t for t in indicators if t in momentum.columns]
             if quad_tickers:
                 quad_scores[quad] = momentum[quad_tickers].mean(axis=1)
-        
+
         return quad_scores
     
     def determine_top_quads(self, quad_scores):
