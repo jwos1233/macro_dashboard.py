@@ -431,20 +431,20 @@ async def performance_page(request: Request):
     })
 
 
-@router.get("/dashboard/backtest-lab")
-async def backtest_lab_page(request: Request):
-    """Backtest Lab - Compare different EMA smoothing windows"""
-    from app.data import run_ema_window_comparison
+@router.get("/dashboard/digital-assets")
+async def digital_assets_page(request: Request):
+    """Digital Assets Framework - BTC allocation based on quad regime"""
+    from app.data import run_btc_framework_backtest
 
     signals = get_signals()
 
-    # Run EMA window comparison
-    comparison = run_ema_window_comparison()
+    # Run BTC framework backtest
+    btc_data = run_btc_framework_backtest()
 
-    return templates.TemplateResponse("dashboard/backtest_lab.html", {
+    return templates.TemplateResponse("dashboard/digital_assets.html", {
         "request": request,
-        "page": "backtest-lab",
+        "page": "digital-assets",
         "signals": signals,
-        "comparison": comparison,
+        "btc_data": btc_data,
         "quad_descriptions": QUADRANT_DESCRIPTIONS,
     })

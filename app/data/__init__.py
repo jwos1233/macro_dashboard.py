@@ -721,3 +721,271 @@ def run_ema_window_comparison() -> dict:
             'error': str(e),
             'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         }
+
+
+# Cache for BTC digital assets framework
+_btc_framework_cache = None
+_btc_framework_cache_time = None
+
+
+def run_btc_framework_backtest() -> dict:
+    """
+    Run BTC-only backtest based on quad framework.
+
+    Allocation rules:
+    - Q1 Primary + above EMA → 200% (Overweight)
+    - Q1 Secondary + above EMA → 100% (Long)
+    - Q1 in top 2 but below EMA → 0% (Neutral)
+    - Q1 not in top 2 → 0% (Underweight)
+    """
+    global _btc_framework_cache, _btc_framework_cache_time
+
+    # Check cache
+    if _btc_framework_cache is not None and _btc_framework_cache_time is not None:
+        cache_age = datetime.now() - _btc_framework_cache_time
+        if cache_age < timedelta(hours=CACHE_DURATION_HOURS):
+            return _btc_framework_cache
+
+    try:
+        print("=" * 60, flush=True)
+        print("RUNNING BTC DIGITAL ASSETS FRAMEWORK BACKTEST", flush=True)
+        print("=" * 60, flush=True)
+
+        import numpy as np
+        import pandas as pd
+        import yfinance as yf
+        from config import QUAD_INDICATORS
+
+        # Parameters
+        INITIAL_CAPITAL = 10000
+        BACKTEST_YEARS = 5
+        MOMENTUM_DAYS = 50
+        EMA_PERIOD = 50
+        EMA_SMOOTHING = 20
+
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=BACKTEST_YEARS * 365 + 150)
+
+        print(f"Fetching BTC and indicator data...", flush=True)
+
+        # Fetch BTC data
+        btc_data = yf.download('BTC-USD', start=start_date, end=end_date, progress=False, auto_adjust=True)
+        if isinstance(btc_data.columns, pd.MultiIndex):
+            btc_close = btc_data['Close']['BTC-USD'] if 'BTC-USD' in btc_data['Close'].columns else btc_data['Close'].iloc[:, 0]
+        else:
+            btc_close = btc_data['Close']
+
+        # Fetch all indicator tickers
+        all_indicators = set()
+        for indicators in QUAD_INDICATORS.values():
+            all_indicators.update(indicators)
+
+        indicator_data = {}
+        for ticker in all_indicators:
+            try:
+                data = yf.download(ticker, start=start_date, end=end_date, progress=False, auto_adjust=True)
+                if len(data) > 0:
+                    if isinstance(data.columns, pd.MultiIndex):
+                        indicator_data[ticker] = data['Close'].iloc[:, 0]
+                    else:
+                        indicator_data[ticker] = data['Close']
+            except:
+                pass
+
+        indicator_df = pd.DataFrame(indicator_data)
+        indicator_df = indicator_df.ffill().bfill()
+
+        # Calculate momentum for quad scoring
+        momentum = indicator_df.pct_change(MOMENTUM_DAYS)
+
+        # Calculate quad scores
+        quad_scores = pd.DataFrame(index=momentum.index)
+        for quad, indicators in QUAD_INDICATORS.items():
+            quad_tickers = [t for t in indicators if t in momentum.columns]
+            if quad_tickers:
+                quad_scores[quad] = momentum[quad_tickers].mean(axis=1)
+
+        # Apply EMA smoothing to quad scores
+        smoothed_scores = quad_scores.ewm(span=EMA_SMOOTHING, adjust=False).mean()
+
+        # Calculate BTC EMA for trend filter
+        btc_ema = btc_close.ewm(span=EMA_PERIOD, adjust=False).mean()
+
+        # Align all data
+        common_dates = btc_close.index.intersection(smoothed_scores.index).intersection(btc_ema.index)
+        btc_close = btc_close.loc[common_dates]
+        btc_ema = btc_ema.loc[common_dates]
+        smoothed_scores = smoothed_scores.loc[common_dates]
+
+        # Warmup period
+        warmup = max(MOMENTUM_DAYS, EMA_PERIOD, EMA_SMOOTHING) + 10
+        btc_close = btc_close.iloc[warmup:]
+        btc_ema = btc_ema.iloc[warmup:]
+        smoothed_scores = smoothed_scores.iloc[warmup:]
+
+        print(f"Running strategy simulation...", flush=True)
+
+        # Simulate strategy
+        portfolio_value = pd.Series(index=btc_close.index, dtype=float)
+        btc_buy_hold = pd.Series(index=btc_close.index, dtype=float)
+        positions = pd.Series(index=btc_close.index, dtype=str)
+        allocations = pd.Series(index=btc_close.index, dtype=float)
+
+        cash = INITIAL_CAPITAL
+        btc_holdings = 0
+        buy_hold_btc = INITIAL_CAPITAL / btc_close.iloc[0]
+
+        regime_history = []
+        prev_allocation = 0
+
+        for i, date in enumerate(btc_close.index):
+            btc_price = btc_close.loc[date]
+            ema_value = btc_ema.loc[date]
+            scores = smoothed_scores.loc[date].sort_values(ascending=False)
+
+            top1 = scores.index[0]
+            top2 = scores.index[1]
+            above_ema = btc_price > ema_value
+
+            # Determine position
+            if top1 == 'Q1':
+                if above_ema:
+                    position = 'Overweight'
+                    target_allocation = 2.0  # 200%
+                else:
+                    position = 'Neutral'
+                    target_allocation = 0.0
+            elif top2 == 'Q1':
+                if above_ema:
+                    position = 'Long'
+                    target_allocation = 1.0  # 100%
+                else:
+                    position = 'Neutral'
+                    target_allocation = 0.0
+            else:
+                position = 'Underweight'
+                target_allocation = 0.0
+
+            positions.loc[date] = position
+            allocations.loc[date] = target_allocation
+
+            # Rebalance if allocation changed
+            if target_allocation != prev_allocation:
+                # Calculate current portfolio value
+                current_value = cash + btc_holdings * btc_price
+
+                # Calculate target BTC value
+                target_btc_value = current_value * target_allocation
+                target_btc_holdings = target_btc_value / btc_price
+
+                # Adjust holdings
+                btc_holdings = target_btc_holdings
+                cash = current_value - target_btc_value
+
+                regime_history.append({
+                    'date': date.strftime('%Y-%m-%d'),
+                    'position': position,
+                    'allocation': target_allocation,
+                    'btc_price': btc_price
+                })
+
+                prev_allocation = target_allocation
+
+            # Calculate portfolio value
+            portfolio_value.loc[date] = cash + btc_holdings * btc_price
+            btc_buy_hold.loc[date] = buy_hold_btc * btc_price
+
+        # Calculate performance metrics
+        strategy_returns = portfolio_value.pct_change().dropna()
+        buyhold_returns = btc_buy_hold.pct_change().dropna()
+
+        # Strategy metrics
+        total_return = (portfolio_value.iloc[-1] / INITIAL_CAPITAL - 1) * 100
+        annual_return = ((portfolio_value.iloc[-1] / INITIAL_CAPITAL) ** (252 / len(portfolio_value)) - 1) * 100
+        volatility = strategy_returns.std() * np.sqrt(252) * 100
+        sharpe = (annual_return - 5) / volatility if volatility > 0 else 0  # Assuming 5% risk-free rate
+
+        # Max drawdown
+        rolling_max = portfolio_value.cummax()
+        drawdown = (portfolio_value - rolling_max) / rolling_max
+        max_drawdown = drawdown.min() * 100
+
+        # Buy & hold metrics
+        bh_total_return = (btc_buy_hold.iloc[-1] / INITIAL_CAPITAL - 1) * 100
+        bh_annual_return = ((btc_buy_hold.iloc[-1] / INITIAL_CAPITAL) ** (252 / len(btc_buy_hold)) - 1) * 100
+        bh_volatility = buyhold_returns.std() * np.sqrt(252) * 100
+        bh_sharpe = (bh_annual_return - 5) / bh_volatility if bh_volatility > 0 else 0
+        bh_rolling_max = btc_buy_hold.cummax()
+        bh_drawdown = (btc_buy_hold - bh_rolling_max) / bh_rolling_max
+        bh_max_drawdown = bh_drawdown.min() * 100
+
+        # Build chart data
+        chart_data = []
+        for date in btc_close.index:
+            chart_data.append({
+                'date': date.strftime('%Y-%m-%d'),
+                'btc_price': float(btc_close.loc[date]),
+                'ema': float(btc_ema.loc[date]),
+                'position': positions.loc[date],
+                'allocation': float(allocations.loc[date]),
+                'portfolio_value': float(portfolio_value.loc[date]),
+                'buyhold_value': float(btc_buy_hold.loc[date]),
+            })
+
+        # Position breakdown
+        position_counts = positions.value_counts()
+        position_pcts = {
+            'Overweight': position_counts.get('Overweight', 0) / len(positions) * 100,
+            'Long': position_counts.get('Long', 0) / len(positions) * 100,
+            'Neutral': position_counts.get('Neutral', 0) / len(positions) * 100,
+            'Underweight': position_counts.get('Underweight', 0) / len(positions) * 100,
+        }
+
+        _btc_framework_cache = {
+            'strategy': {
+                'total_return': total_return,
+                'annual_return': annual_return,
+                'sharpe': sharpe,
+                'max_drawdown': max_drawdown,
+                'volatility': volatility,
+                'final_value': portfolio_value.iloc[-1],
+            },
+            'buyhold': {
+                'total_return': bh_total_return,
+                'annual_return': bh_annual_return,
+                'sharpe': bh_sharpe,
+                'max_drawdown': bh_max_drawdown,
+                'volatility': bh_volatility,
+                'final_value': btc_buy_hold.iloc[-1],
+            },
+            'current_position': positions.iloc[-1],
+            'current_allocation': allocations.iloc[-1],
+            'position_breakdown': position_pcts,
+            'chart_data': chart_data,
+            'regime_history': regime_history[-20:],  # Last 20 regime changes
+            'parameters': {
+                'initial_capital': INITIAL_CAPITAL,
+                'backtest_years': BACKTEST_YEARS,
+                'momentum_days': MOMENTUM_DAYS,
+                'ema_period': EMA_PERIOD,
+                'ema_smoothing': EMA_SMOOTHING,
+            },
+            'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        }
+        _btc_framework_cache_time = datetime.now()
+
+        print(f"✓ BTC Framework complete!", flush=True)
+        print(f"  Strategy: {total_return:.1f}% return, Sharpe {sharpe:.2f}", flush=True)
+        print(f"  Buy&Hold: {bh_total_return:.1f}% return, Sharpe {bh_sharpe:.2f}", flush=True)
+
+        return _btc_framework_cache
+
+    except Exception as e:
+        print(f"Error running BTC framework: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+
+        return {
+            'error': str(e),
+            'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        }
