@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}Backtest Lab - Epoch Macro{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Backtest Lab</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Compare backtest strategies side-by-side</p>
+        </div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+            {% if comparison.generated_at %}
+            Generated: {{ comparison.generated_at }}
+            {% endif %}
+        </div>
+    </div>
+
+    {% if comparison.error %}
+    <!-- Error State -->
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+        <p class="text-red-800 dark:text-red-200">Error running comparison: {{ comparison.error }}</p>
+    </div>
+    {% else %}
+
+    <!-- Parameters Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Test Parameters</h3>
+        <div class="flex flex-wrap gap-4 text-sm">
+            <span class="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded">
+                Capital: ${{ "{:,.0f}".format(comparison.parameters.initial_capital or 50000) }}
+            </span>
+            <span class="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded">
+                Period: {{ comparison.parameters.backtest_years or 5 }} years
+            </span>
+            <span class="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded">
+                Momentum: {{ comparison.parameters.momentum_days or 50 }}-day
+            </span>
+            <span class="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded">
+                EMA Smoothing: {{ comparison.parameters.ema_smoothing_period or 20 }}-period
+            </span>
+            <span class="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded">
+                Stop Loss: {{ comparison.parameters.atr_stop_loss or 2.0 }}x ATR
+            </span>
+        </div>
+    </div>
+
+    <!-- Comparison Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Standard Strategy -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 {% if comparison.verdict.better_sharpe == 'standard' %}ring-2 ring-gold{% endif %}">
+            <div class="flex justify-between items-start mb-4">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ comparison.standard.name }}</h2>
+                {% if comparison.verdict.better_sharpe == 'standard' %}
+                <span class="bg-gold/20 text-gold px-2 py-1 rounded text-xs font-medium">Better Sharpe</span>
+                {% endif %}
+            </div>
+
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Total Return</p>
+                        <p class="text-2xl font-bold {% if comparison.standard.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
+                            {{ "%.1f"|format(comparison.standard.total_return or 0) }}%
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Sharpe Ratio</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                            {{ "%.2f"|format(comparison.standard.sharpe or 0) }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Annual Return</p>
+                        <p class="text-lg font-semibold {% if comparison.standard.annual_return >= 0 %}text-success{% else %}text-warning{% endif %}">
+                            {{ "%.1f"|format(comparison.standard.annual_return or 0) }}%
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Max Drawdown</p>
+                        <p class="text-lg font-semibold text-warning">
+                            {{ "%.1f"|format(comparison.standard.max_drawdown or 0) }}%
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Volatility</p>
+                        <p class="text-lg font-semibold text-gray-900 dark:text-white">
+                            {{ "%.1f"|format(comparison.standard.volatility or 0) }}%
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Regime Changes</p>
+                        <p class="text-lg font-semibold text-gray-900 dark:text-white">
+                            {{ comparison.standard.regime_changes or 0 }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Final Value</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">
+                        ${{ "{:,.0f}".format(comparison.standard.final_value or 50000) }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- EMA-Smoothed Strategy -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 {% if comparison.verdict.better_sharpe == 'smoothed' %}ring-2 ring-gold{% endif %}">
+            <div class="flex justify-between items-start mb-4">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ comparison.smoothed.name }}</h2>
+                {% if comparison.verdict.better_sharpe == 'smoothed' %}
+                <span class="bg-gold/20 text-gold px-2 py-1 rounded text-xs font-medium">Better Sharpe</span>
+                {% endif %}
+            </div>
+
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Total Return</p>
+                        <p class="text-2xl font-bold {% if comparison.smoothed.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
+                            {{ "%.1f"|format(comparison.smoothed.total_return or 0) }}%
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Sharpe Ratio</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                            {{ "%.2f"|format(comparison.smoothed.sharpe or 0) }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Annual Return</p>
+                        <p class="text-lg font-semibold {% if comparison.smoothed.annual_return >= 0 %}text-success{% else %}text-warning{% endif %}">
+                            {{ "%.1f"|format(comparison.smoothed.annual_return or 0) }}%
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Max Drawdown</p>
+                        <p class="text-lg font-semibold text-warning">
+                            {{ "%.1f"|format(comparison.smoothed.max_drawdown or 0) }}%
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Volatility</p>
+                        <p class="text-lg font-semibold text-gray-900 dark:text-white">
+                            {{ "%.1f"|format(comparison.smoothed.volatility or 0) }}%
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Regime Changes</p>
+                        <p class="text-lg font-semibold text-gray-900 dark:text-white">
+                            {{ comparison.smoothed.regime_changes or 0 }}
+                            {% if comparison.verdict.fewer_regime_changes == 'smoothed' %}
+                            <span class="text-xs text-success ml-1">fewer</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Final Value</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">
+                        ${{ "{:,.0f}".format(comparison.smoothed.final_value or 50000) }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Equity Curve Chart -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Equity Curves Comparison</h3>
+        <div class="h-96">
+            <canvas id="comparisonChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Verdict Summary -->
+    <div class="bg-navy dark:bg-gray-800 rounded-lg shadow p-6 text-white">
+        <h3 class="text-lg font-semibold mb-4">Analysis Summary</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white/10 rounded p-4">
+                <p class="text-sm text-gray-300 mb-1">Better Risk-Adjusted Return</p>
+                <p class="text-xl font-bold">
+                    {% if comparison.verdict.better_sharpe == 'smoothed' %}
+                    EMA-Smoothed
+                    {% else %}
+                    Standard
+                    {% endif %}
+                </p>
+            </div>
+            <div class="bg-white/10 rounded p-4">
+                <p class="text-sm text-gray-300 mb-1">Higher Total Return</p>
+                <p class="text-xl font-bold">
+                    {% if comparison.verdict.better_return == 'smoothed' %}
+                    EMA-Smoothed
+                    {% else %}
+                    Standard
+                    {% endif %}
+                </p>
+            </div>
+            <div class="bg-white/10 rounded p-4">
+                <p class="text-sm text-gray-300 mb-1">Fewer Regime Changes</p>
+                <p class="text-xl font-bold">
+                    {% if comparison.verdict.fewer_regime_changes == 'smoothed' %}
+                    EMA-Smoothed
+                    {% else %}
+                    Standard
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if not comparison.error and comparison.standard.equity_curve and comparison.smoothed.equity_curve %}
+    const standardCurve = {{ comparison.standard.equity_curve | tojson }};
+    const smoothedCurve = {{ comparison.smoothed.equity_curve | tojson }};
+
+    // Use standard curve dates as labels (both should have same dates)
+    const labels = standardCurve.map(d => d.date);
+    const standardValues = standardCurve.map(d => d.value);
+    const smoothedValues = smoothedCurve.map(d => d.value);
+
+    const ctx = document.getElementById('comparisonChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Standard',
+                    data: standardValues,
+                    borderColor: '#6B7280',
+                    backgroundColor: 'rgba(107, 114, 128, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    pointRadius: 0,
+                    tension: 0.1
+                },
+                {
+                    label: 'EMA-Smoothed',
+                    data: smoothedValues,
+                    borderColor: '#D4A857',
+                    backgroundColor: 'rgba(212, 168, 87, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    pointRadius: 0,
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#374151'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': $' + context.parsed.y.toLocaleString(undefined, {
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0
+                            });
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'category',
+                    ticks: {
+                        maxTicksLimit: 12,
+                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
+                    },
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        },
+                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
+                    },
+                    grid: {
+                        color: document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}
