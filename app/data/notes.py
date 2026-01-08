@@ -306,7 +306,12 @@ Create the morning note now based on today's date, current market conditions, la
             max_tokens=4000,
             messages=[
                 {"role": "user", "content": prompt}
-            ]
+            ],
+            tools=[{
+                "type": "web_search_20250305",
+                "name": "web_search",
+                "max_uses": 10  # Allow up to 10 searches for comprehensive research
+            }]
         )
 
         content = message.content[0].text.strip()
