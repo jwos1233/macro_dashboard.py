@@ -736,7 +736,7 @@ def run_btc_framework_backtest() -> dict:
     - Q1 in top 2 + above EMA → 200% (Overweight)
     - Q1 in top 2 but below EMA → 0% (Neutral)
     - Q1 not in top 2 + above EMA → 0% (Underweight)
-    - Q1 not in top 2 + below EMA → -100% (Short)
+    - Q1 not in top 2 + below EMA → -50% (Short)
     """
     global _btc_framework_cache, _btc_framework_cache_time
 
@@ -869,7 +869,7 @@ def run_btc_framework_backtest() -> dict:
                     target_allocation = 0.0
                 else:
                     position = 'Short'
-                    target_allocation = -1.0  # -100% (short)
+                    target_allocation = -0.5  # -50% (short)
 
             positions.loc[date] = position
             allocations.loc[date] = target_allocation
