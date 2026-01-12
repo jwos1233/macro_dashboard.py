@@ -51,19 +51,6 @@
                     {% else %}0% Allocation{% endif %}
                 </p>
             </div>
-            <div class="text-center">
-                <p class="text-sm text-gray-300">Hurst Filter</p>
-                {% if btc_data.hurst %}
-                <p class="text-2xl font-bold {% if btc_data.hurst.signal == 'Trending' %}text-green-400{% else %}text-yellow-400{% endif %}">
-                    {{ btc_data.hurst.signal }}
-                </p>
-                <p class="text-xs text-gray-400 mt-1">
-                    H: {{ "%.3f"|format(btc_data.hurst.current) }} vs EMA: {{ "%.3f"|format(btc_data.hurst.current_ema) }}
-                </p>
-                {% else %}
-                <p class="text-2xl font-bold text-gray-400">N/A</p>
-                {% endif %}
-            </div>
             <div class="text-right">
                 <p class="text-sm text-gray-300">BTC Price</p>
                 {% set last_price = btc_data.chart_data[-1].btc_price if btc_data.chart_data else 0 %}
@@ -171,57 +158,6 @@
             <p id="stat-final-value" class="text-xl font-bold text-gray-900 dark:text-white">${{ "{:,.0f}".format(btc_data.strategy.final_value or 10000) }}</p>
         </div>
     </div>
-
-    <!-- Hurst Exponent Comparison -->
-    {% if hurst_comparison and hurst_comparison.comparison %}
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Hurst Filter Comparison (BTC Strategy)</h3>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Comparing different Hurst exponent lookback periods as trend filters. H > EMA(H) = Trending (take positions), otherwise Neutral.</p>
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="border-b border-gray-200 dark:border-gray-700">
-                        <th class="text-left py-2 px-3 text-gray-500 dark:text-gray-400">Filter</th>
-                        <th class="text-right py-2 px-3 text-gray-500 dark:text-gray-400">Return</th>
-                        <th class="text-right py-2 px-3 text-gray-500 dark:text-gray-400">Sharpe</th>
-                        <th class="text-right py-2 px-3 text-gray-500 dark:text-gray-400">Max DD</th>
-                        <th class="text-right py-2 px-3 text-gray-500 dark:text-gray-400">Volatility</th>
-                        <th class="text-right py-2 px-3 text-gray-500 dark:text-gray-400">Trending %</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in hurst_comparison.comparison %}
-                    <tr class="border-b border-gray-100 dark:border-gray-700 {% if item.name == 'hurst_50' %}bg-navy/10 dark:bg-navy/20{% endif %}">
-                        <td class="py-2 px-3 font-medium text-gray-900 dark:text-white">
-                            {{ item.label }}
-                            {% if item.name == 'hurst_50' %}<span class="text-xs text-navy ml-1">(active)</span>{% endif %}
-                        </td>
-                        <td class="text-right py-2 px-3 {% if item.total_return >= 0 %}text-success{% else %}text-warning{% endif %} font-semibold">
-                            {{ "%.1f"|format(item.total_return) }}%
-                        </td>
-                        <td class="text-right py-2 px-3 text-gray-900 dark:text-white font-semibold">
-                            {{ "%.2f"|format(item.sharpe) }}
-                        </td>
-                        <td class="text-right py-2 px-3 text-warning">
-                            {{ "%.1f"|format(item.max_drawdown) }}%
-                        </td>
-                        <td class="text-right py-2 px-3 text-gray-600 dark:text-gray-400">
-                            {{ "%.1f"|format(item.volatility) }}%
-                        </td>
-                        <td class="text-right py-2 px-3 text-gray-600 dark:text-gray-400">
-                            {{ "%.0f"|format(item.trending_pct) }}%
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <p class="text-xs text-gray-400 mt-3">
-            Trending % = percentage of time Hurst > EMA(Hurst). Lower % means filter is more selective.
-            Active strategy uses 50-day Hurst lookback with 20-day EMA.
-        </p>
-    </div>
-    {% endif %}
 
     <!-- BTC Chart with Position Overlay -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
