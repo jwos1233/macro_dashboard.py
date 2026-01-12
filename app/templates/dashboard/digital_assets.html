@@ -200,23 +200,23 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                 <p class="text-sm text-gray-500 dark:text-gray-400">Multi-Asset Return</p>
-                <p class="text-2xl font-bold {% if vol_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
+                <p id="stat-invvol-return" class="text-2xl font-bold {% if vol_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
                     {{ "%.1f"|format(vol_data.strategy.total_return or 0) }}%
                 </p>
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                 <p class="text-sm text-gray-500 dark:text-gray-400">BTC-Only Return</p>
-                <p class="text-2xl font-bold {% if btc_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
+                <p id="stat-invvol-btconly" class="text-2xl font-bold {% if btc_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
                     {{ "%.1f"|format(btc_data.strategy.total_return or 0) }}%
                 </p>
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                 <p class="text-sm text-gray-500 dark:text-gray-400">Multi-Asset Sharpe</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ "%.2f"|format(vol_data.strategy.sharpe or 0) }}</p>
+                <p id="stat-invvol-sharpe" class="text-2xl font-bold text-gray-900 dark:text-white">{{ "%.2f"|format(vol_data.strategy.sharpe or 0) }}</p>
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                 <p class="text-sm text-gray-500 dark:text-gray-400">Multi-Asset Max DD</p>
-                <p class="text-xl font-bold text-warning">{{ "%.1f"|format(vol_data.strategy.max_drawdown or 0) }}%</p>
+                <p id="stat-invvol-maxdd" class="text-xl font-bold text-warning">{{ "%.1f"|format(vol_data.strategy.max_drawdown or 0) }}%</p>
             </div>
         </div>
 
@@ -281,23 +281,23 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                 <p class="text-sm text-gray-500 dark:text-gray-400">Vol Chase Return</p>
-                <p class="text-2xl font-bold {% if vol_chase_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
+                <p id="stat-volchase-return" class="text-2xl font-bold {% if vol_chase_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
                     {{ "%.1f"|format(vol_chase_data.strategy.total_return or 0) }}%
                 </p>
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                 <p class="text-sm text-gray-500 dark:text-gray-400">Inverse Vol Return</p>
-                <p class="text-2xl font-bold {% if vol_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
+                <p id="stat-volchase-invvol" class="text-2xl font-bold {% if vol_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
                     {{ "%.1f"|format(vol_data.strategy.total_return or 0) }}%
                 </p>
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                 <p class="text-sm text-gray-500 dark:text-gray-400">Vol Chase Sharpe</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ "%.2f"|format(vol_chase_data.strategy.sharpe or 0) }}</p>
+                <p id="stat-volchase-sharpe" class="text-2xl font-bold text-gray-900 dark:text-white">{{ "%.2f"|format(vol_chase_data.strategy.sharpe or 0) }}</p>
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                 <p class="text-sm text-gray-500 dark:text-gray-400">Vol Chase Max DD</p>
-                <p class="text-xl font-bold text-warning">{{ "%.1f"|format(vol_chase_data.strategy.max_drawdown or 0) }}%</p>
+                <p id="stat-volchase-maxdd" class="text-xl font-bold text-warning">{{ "%.1f"|format(vol_chase_data.strategy.max_drawdown or 0) }}%</p>
             </div>
         </div>
 
@@ -362,31 +362,31 @@
                     <tbody>
                         <tr class="border-b border-gray-100 dark:border-gray-700">
                             <td class="py-2 font-medium text-gray-900 dark:text-white">BTC-Only</td>
-                            <td class="text-right py-2 {% if btc_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">{{ "%.1f"|format(btc_data.strategy.total_return or 0) }}%</td>
-                            <td class="text-right py-2 text-gray-700 dark:text-gray-300">{{ "%.2f"|format(btc_data.strategy.sharpe or 0) }}</td>
-                            <td class="text-right py-2 text-warning">{{ "%.1f"|format(btc_data.strategy.max_drawdown or 0) }}%</td>
-                            <td class="text-right py-2 text-gray-700 dark:text-gray-300">{{ "%.1f"|format(btc_data.strategy.volatility or 0) }}%</td>
+                            <td id="tbl-btc-return" class="text-right py-2 {% if btc_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">{{ "%.1f"|format(btc_data.strategy.total_return or 0) }}%</td>
+                            <td id="tbl-btc-sharpe" class="text-right py-2 text-gray-700 dark:text-gray-300">{{ "%.2f"|format(btc_data.strategy.sharpe or 0) }}</td>
+                            <td id="tbl-btc-maxdd" class="text-right py-2 text-warning">{{ "%.1f"|format(btc_data.strategy.max_drawdown or 0) }}%</td>
+                            <td id="tbl-btc-vol" class="text-right py-2 text-gray-700 dark:text-gray-300">{{ "%.1f"|format(btc_data.strategy.volatility or 0) }}%</td>
                         </tr>
                         <tr class="border-b border-gray-100 dark:border-gray-700">
                             <td class="py-2 font-medium text-gray-900 dark:text-white">Inverse Vol (Low Vol = High Weight)</td>
-                            <td class="text-right py-2 {% if vol_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">{{ "%.1f"|format(vol_data.strategy.total_return or 0) }}%</td>
-                            <td class="text-right py-2 text-gray-700 dark:text-gray-300">{{ "%.2f"|format(vol_data.strategy.sharpe or 0) }}</td>
-                            <td class="text-right py-2 text-warning">{{ "%.1f"|format(vol_data.strategy.max_drawdown or 0) }}%</td>
-                            <td class="text-right py-2 text-gray-700 dark:text-gray-300">{{ "%.1f"|format(vol_data.strategy.volatility or 0) }}%</td>
+                            <td id="tbl-invvol-return" class="text-right py-2 {% if vol_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">{{ "%.1f"|format(vol_data.strategy.total_return or 0) }}%</td>
+                            <td id="tbl-invvol-sharpe" class="text-right py-2 text-gray-700 dark:text-gray-300">{{ "%.2f"|format(vol_data.strategy.sharpe or 0) }}</td>
+                            <td id="tbl-invvol-maxdd" class="text-right py-2 text-warning">{{ "%.1f"|format(vol_data.strategy.max_drawdown or 0) }}%</td>
+                            <td id="tbl-invvol-vol" class="text-right py-2 text-gray-700 dark:text-gray-300">{{ "%.1f"|format(vol_data.strategy.volatility or 0) }}%</td>
                         </tr>
                         <tr class="border-b border-gray-100 dark:border-gray-700">
                             <td class="py-2 font-medium text-gray-900 dark:text-white">Vol Chase (High Vol = High Weight)</td>
-                            <td class="text-right py-2 {% if vol_chase_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">{{ "%.1f"|format(vol_chase_data.strategy.total_return or 0) }}%</td>
-                            <td class="text-right py-2 text-gray-700 dark:text-gray-300">{{ "%.2f"|format(vol_chase_data.strategy.sharpe or 0) }}</td>
-                            <td class="text-right py-2 text-warning">{{ "%.1f"|format(vol_chase_data.strategy.max_drawdown or 0) }}%</td>
-                            <td class="text-right py-2 text-gray-700 dark:text-gray-300">{{ "%.1f"|format(vol_chase_data.strategy.volatility or 0) }}%</td>
+                            <td id="tbl-volchase-return" class="text-right py-2 {% if vol_chase_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">{{ "%.1f"|format(vol_chase_data.strategy.total_return or 0) }}%</td>
+                            <td id="tbl-volchase-sharpe" class="text-right py-2 text-gray-700 dark:text-gray-300">{{ "%.2f"|format(vol_chase_data.strategy.sharpe or 0) }}</td>
+                            <td id="tbl-volchase-maxdd" class="text-right py-2 text-warning">{{ "%.1f"|format(vol_chase_data.strategy.max_drawdown or 0) }}%</td>
+                            <td id="tbl-volchase-vol" class="text-right py-2 text-gray-700 dark:text-gray-300">{{ "%.1f"|format(vol_chase_data.strategy.volatility or 0) }}%</td>
                         </tr>
                         <tr>
                             <td class="py-2 font-medium text-gray-500 dark:text-gray-400">BTC Buy & Hold</td>
-                            <td class="text-right py-2 {% if btc_data.buyhold.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">{{ "%.1f"|format(btc_data.buyhold.total_return or 0) }}%</td>
-                            <td class="text-right py-2 text-gray-500 dark:text-gray-400">{{ "%.2f"|format(btc_data.buyhold.sharpe or 0) }}</td>
-                            <td class="text-right py-2 text-warning">{{ "%.1f"|format(btc_data.buyhold.max_drawdown or 0) }}%</td>
-                            <td class="text-right py-2 text-gray-500 dark:text-gray-400">{{ "%.1f"|format(btc_data.buyhold.volatility or 0) }}%</td>
+                            <td id="tbl-bh-return" class="text-right py-2 {% if btc_data.buyhold.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">{{ "%.1f"|format(btc_data.buyhold.total_return or 0) }}%</td>
+                            <td id="tbl-bh-sharpe" class="text-right py-2 text-gray-500 dark:text-gray-400">{{ "%.2f"|format(btc_data.buyhold.sharpe or 0) }}</td>
+                            <td id="tbl-bh-maxdd" class="text-right py-2 text-warning">{{ "%.1f"|format(btc_data.buyhold.max_drawdown or 0) }}%</td>
+                            <td id="tbl-bh-vol" class="text-right py-2 text-gray-500 dark:text-gray-400">{{ "%.1f"|format(btc_data.buyhold.volatility or 0) }}%</td>
                         </tr>
                     </tbody>
                 </table>
@@ -569,6 +569,132 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('pos-bar-' + pos).style.width = pct + '%';
             document.getElementById('pos-pct-' + pos).textContent = pct.toFixed(1) + '%';
         });
+    }
+
+    // Calculate statistics for multi-asset data (inverse vol / vol chase)
+    function calculateMultiAssetStats(data) {
+        if (!data || data.length < 2) return null;
+
+        const startValue = data[0].portfolio_value;
+        const endValue = data[data.length - 1].portfolio_value;
+        const startBuyhold = data[0].buyhold_value;
+        const endBuyhold = data[data.length - 1].buyhold_value;
+
+        // Returns
+        const strategyReturn = ((endValue / startValue) - 1) * 100;
+        const buyholdReturn = ((endBuyhold / startBuyhold) - 1) * 100;
+
+        // Daily returns for volatility/sharpe
+        const strategyReturns = [];
+        const buyholdReturns = [];
+        for (let i = 1; i < data.length; i++) {
+            strategyReturns.push((data[i].portfolio_value / data[i-1].portfolio_value) - 1);
+            buyholdReturns.push((data[i].buyhold_value / data[i-1].buyhold_value) - 1);
+        }
+
+        // Volatility (annualized)
+        const strategyVol = stdDev(strategyReturns) * Math.sqrt(252) * 100;
+        const buyholdVol = stdDev(buyholdReturns) * Math.sqrt(252) * 100;
+
+        // Annualized return
+        const tradingDays = data.length;
+        const years = tradingDays / 252;
+        const strategyAnnual = (Math.pow(endValue / startValue, 1/years) - 1) * 100;
+        const buyholdAnnual = (Math.pow(endBuyhold / startBuyhold, 1/years) - 1) * 100;
+
+        // Sharpe (assuming 5% risk-free)
+        const strategySharpe = strategyVol > 0 ? (strategyAnnual - 5) / strategyVol : 0;
+        const buyholdSharpe = buyholdVol > 0 ? (buyholdAnnual - 5) / buyholdVol : 0;
+
+        // Max Drawdown
+        const strategyMaxDD = calcMaxDrawdown(data.map(d => d.portfolio_value));
+        const buyholdMaxDD = calcMaxDrawdown(data.map(d => d.buyhold_value));
+
+        return {
+            strategyReturn,
+            buyholdReturn,
+            strategySharpe,
+            buyholdSharpe,
+            strategyMaxDD,
+            buyholdMaxDD,
+            strategyVol,
+            buyholdVol
+        };
+    }
+
+    // Update multi-asset stats display
+    function updateMultiAssetStats(invVolStats, volChaseStats, btcStats) {
+        // Update Inverse Vol section stats
+        if (invVolStats) {
+            const invVolRetEl = document.getElementById('stat-invvol-return');
+            if (invVolRetEl) {
+                invVolRetEl.textContent = invVolStats.strategyReturn.toFixed(1) + '%';
+                invVolRetEl.className = 'text-2xl font-bold ' + (invVolStats.strategyReturn >= 0 ? 'text-success' : 'text-warning');
+            }
+            const invVolBtcEl = document.getElementById('stat-invvol-btconly');
+            if (invVolBtcEl && btcStats) {
+                invVolBtcEl.textContent = btcStats.strategyReturn.toFixed(1) + '%';
+                invVolBtcEl.className = 'text-2xl font-bold ' + (btcStats.strategyReturn >= 0 ? 'text-success' : 'text-warning');
+            }
+            const invVolSharpeEl = document.getElementById('stat-invvol-sharpe');
+            if (invVolSharpeEl) invVolSharpeEl.textContent = invVolStats.strategySharpe.toFixed(2);
+            const invVolMaxddEl = document.getElementById('stat-invvol-maxdd');
+            if (invVolMaxddEl) invVolMaxddEl.textContent = invVolStats.strategyMaxDD.toFixed(1) + '%';
+        }
+
+        // Update Vol Chase section stats
+        if (volChaseStats) {
+            const volChaseRetEl = document.getElementById('stat-volchase-return');
+            if (volChaseRetEl) {
+                volChaseRetEl.textContent = volChaseStats.strategyReturn.toFixed(1) + '%';
+                volChaseRetEl.className = 'text-2xl font-bold ' + (volChaseStats.strategyReturn >= 0 ? 'text-success' : 'text-warning');
+            }
+            const volChaseInvVolEl = document.getElementById('stat-volchase-invvol');
+            if (volChaseInvVolEl && invVolStats) {
+                volChaseInvVolEl.textContent = invVolStats.strategyReturn.toFixed(1) + '%';
+                volChaseInvVolEl.className = 'text-2xl font-bold ' + (invVolStats.strategyReturn >= 0 ? 'text-success' : 'text-warning');
+            }
+            const volChaseSharpeEl = document.getElementById('stat-volchase-sharpe');
+            if (volChaseSharpeEl) volChaseSharpeEl.textContent = volChaseStats.strategySharpe.toFixed(2);
+            const volChaseMaxddEl = document.getElementById('stat-volchase-maxdd');
+            if (volChaseMaxddEl) volChaseMaxddEl.textContent = volChaseStats.strategyMaxDD.toFixed(1) + '%';
+        }
+
+        // Update summary comparison table
+        if (btcStats) {
+            updateTableCell('tbl-btc-return', btcStats.strategyReturn, true);
+            updateTableCell('tbl-btc-sharpe', btcStats.strategySharpe, false, 2);
+            updateTableCell('tbl-btc-maxdd', btcStats.strategyMaxDD, true);
+            updateTableCell('tbl-btc-vol', btcStats.strategyVol, true);
+            updateTableCell('tbl-bh-return', btcStats.buyholdReturn, true);
+            updateTableCell('tbl-bh-sharpe', btcStats.buyholdSharpe, false, 2);
+            updateTableCell('tbl-bh-maxdd', btcStats.buyholdMaxDD, true);
+            updateTableCell('tbl-bh-vol', btcStats.buyholdVol, true);
+        }
+        if (invVolStats) {
+            updateTableCell('tbl-invvol-return', invVolStats.strategyReturn, true);
+            updateTableCell('tbl-invvol-sharpe', invVolStats.strategySharpe, false, 2);
+            updateTableCell('tbl-invvol-maxdd', invVolStats.strategyMaxDD, true);
+            updateTableCell('tbl-invvol-vol', invVolStats.strategyVol, true);
+        }
+        if (volChaseStats) {
+            updateTableCell('tbl-volchase-return', volChaseStats.strategyReturn, true);
+            updateTableCell('tbl-volchase-sharpe', volChaseStats.strategySharpe, false, 2);
+            updateTableCell('tbl-volchase-maxdd', volChaseStats.strategyMaxDD, true);
+            updateTableCell('tbl-volchase-vol', volChaseStats.strategyVol, true);
+        }
+    }
+
+    // Helper to update table cells
+    function updateTableCell(id, value, isPct, decimals = 1) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = value.toFixed(decimals) + (isPct ? '%' : '');
+        // Update color class for return columns
+        if (id.includes('-return')) {
+            el.className = el.className.replace(/text-(success|warning)/g, '').trim();
+            el.className += value >= 0 ? ' text-success' : ' text-warning';
+        }
     }
 
     // Create BTC chart
@@ -919,19 +1045,28 @@ document.addEventListener('DOMContentLoaded', function() {
         createBtcChart(filteredData);
         createEquityChart(filteredData);
 
-        // Update multi-asset equity comparison charts if data is available
+        // Calculate and update multi-asset stats
+        let invVolStats = null;
+        let volChaseStats = null;
+
+        // Update multi-asset equity comparison charts and stats if data is available
         if (fullInvVolData) {
             const filteredInvVol = filterDataByRange(fullInvVolData, range);
             if (filteredInvVol.length >= 2) {
                 createInvVolEquityChart(filteredInvVol);
+                invVolStats = calculateMultiAssetStats(filteredInvVol);
             }
         }
         if (fullVolChaseData) {
             const filteredVolChase = filterDataByRange(fullVolChaseData, range);
             if (filteredVolChase.length >= 2) {
                 createVolChaseEquityChart(filteredVolChase);
+                volChaseStats = calculateMultiAssetStats(filteredVolChase);
             }
         }
+
+        // Update all multi-asset stats displays (including summary table)
+        updateMultiAssetStats(invVolStats, volChaseStats, stats);
 
         // Update button styles
         document.querySelectorAll('#timeRangeFilter button').forEach(btn => {
