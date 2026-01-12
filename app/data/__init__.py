@@ -1037,13 +1037,19 @@ def run_volatility_weighted_backtest() -> dict:
         EMA_SMOOTHING = 20
         VOL_LOOKBACK = 30  # Days for volatility calculation
 
-        ASSETS = ['BTC-USD', 'ETH-USD', 'SOL-USD']
-        ASSET_NAMES = {'BTC-USD': 'BTC', 'ETH-USD': 'ETH', 'SOL-USD': 'SOL'}
+        # Top 10 cryptos by market cap
+        ASSETS = ['BTC-USD', 'ETH-USD', 'XRP-USD', 'BNB-USD', 'SOL-USD',
+                  'TRX-USD', 'DOGE-USD', 'ADA-USD', 'BCH-USD', 'LINK-USD']
+        ASSET_NAMES = {
+            'BTC-USD': 'BTC', 'ETH-USD': 'ETH', 'XRP-USD': 'XRP', 'BNB-USD': 'BNB',
+            'SOL-USD': 'SOL', 'TRX-USD': 'TRX', 'DOGE-USD': 'DOGE', 'ADA-USD': 'ADA',
+            'BCH-USD': 'BCH', 'LINK-USD': 'LINK'
+        }
 
         end_date = datetime.now()
         start_date = end_date - timedelta(days=BACKTEST_YEARS * 365 + 150)
 
-        print(f"Fetching crypto and indicator data...", flush=True)
+        print(f"Fetching crypto and indicator data for {len(ASSETS)} assets...", flush=True)
 
         # Fetch all crypto data
         crypto_data = {}
@@ -1413,13 +1419,19 @@ def run_volatility_chase_backtest() -> dict:
         EMA_SMOOTHING = 20
         VOL_LOOKBACK = 30
 
-        ASSETS = ['BTC-USD', 'ETH-USD', 'SOL-USD']
-        ASSET_NAMES = {'BTC-USD': 'BTC', 'ETH-USD': 'ETH', 'SOL-USD': 'SOL'}
+        # Top 10 cryptos by market cap
+        ASSETS = ['BTC-USD', 'ETH-USD', 'XRP-USD', 'BNB-USD', 'SOL-USD',
+                  'TRX-USD', 'DOGE-USD', 'ADA-USD', 'BCH-USD', 'LINK-USD']
+        ASSET_NAMES = {
+            'BTC-USD': 'BTC', 'ETH-USD': 'ETH', 'XRP-USD': 'XRP', 'BNB-USD': 'BNB',
+            'SOL-USD': 'SOL', 'TRX-USD': 'TRX', 'DOGE-USD': 'DOGE', 'ADA-USD': 'ADA',
+            'BCH-USD': 'BCH', 'LINK-USD': 'LINK'
+        }
 
         end_date = datetime.now()
         start_date = end_date - timedelta(days=BACKTEST_YEARS * 365 + 150)
 
-        print(f"Fetching crypto and indicator data...", flush=True)
+        print(f"Fetching crypto and indicator data for {len(ASSETS)} assets...", flush=True)
 
         # Fetch all crypto data
         crypto_data = {}
