@@ -162,6 +162,87 @@
     </div>
 
     {% endif %}
+
+    <!-- Multi-Asset Volatility Weighted Section -->
+    {% if vol_data and not vol_data.error %}
+    <div class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Multi-Asset Inverse Volatility</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400">BTC/ETH/SOL allocation weighted by inverse {{ vol_data.parameters.vol_lookback or 30 }}-day volatility</p>
+            </div>
+        </div>
+
+        <!-- Current Weights Card -->
+        <div class="bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg shadow p-6 text-white mb-6">
+            <h3 class="text-lg font-semibold mb-4">Current Inverse Vol Weights</h3>
+            <div class="grid grid-cols-3 gap-4">
+                <div class="text-center">
+                    <p class="text-3xl font-bold">{{ "%.1f"|format(vol_data.current_weights.BTC or 33.3) }}%</p>
+                    <p class="text-sm opacity-80">BTC</p>
+                    <p class="text-xs opacity-60 mt-1">Vol: {{ "%.0f"|format(vol_data.current_vols.BTC or 0) }}%</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-3xl font-bold">{{ "%.1f"|format(vol_data.current_weights.ETH or 33.3) }}%</p>
+                    <p class="text-sm opacity-80">ETH</p>
+                    <p class="text-xs opacity-60 mt-1">Vol: {{ "%.0f"|format(vol_data.current_vols.ETH or 0) }}%</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-3xl font-bold">{{ "%.1f"|format(vol_data.current_weights.SOL or 33.3) }}%</p>
+                    <p class="text-sm opacity-80">SOL</p>
+                    <p class="text-xs opacity-60 mt-1">Vol: {{ "%.0f"|format(vol_data.current_vols.SOL or 0) }}%</p>
+                </div>
+            </div>
+            <p class="text-xs text-center mt-4 opacity-70">Lower volatility = Higher weight (risk parity style)</p>
+        </div>
+
+        <!-- Multi-Asset Performance Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <p class="text-sm text-gray-500 dark:text-gray-400">Multi-Asset Return</p>
+                <p class="text-2xl font-bold {% if vol_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
+                    {{ "%.1f"|format(vol_data.strategy.total_return or 0) }}%
+                </p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <p class="text-sm text-gray-500 dark:text-gray-400">BTC-Only Return</p>
+                <p class="text-2xl font-bold {% if btc_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
+                    {{ "%.1f"|format(btc_data.strategy.total_return or 0) }}%
+                </p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <p class="text-sm text-gray-500 dark:text-gray-400">Multi-Asset Sharpe</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ "%.2f"|format(vol_data.strategy.sharpe or 0) }}</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <p class="text-sm text-gray-500 dark:text-gray-400">Multi-Asset Max DD</p>
+                <p class="text-xl font-bold text-warning">{{ "%.1f"|format(vol_data.strategy.max_drawdown or 0) }}%</p>
+            </div>
+        </div>
+
+        <!-- Asset Weight History Chart -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Asset Weight History (Inverse Vol)</h3>
+            <div class="h-64">
+                <canvas id="weightChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Volatility History Chart -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Rolling {{ vol_data.parameters.vol_lookback or 30 }}-Day Volatility</h3>
+            <div class="h-64">
+                <canvas id="volChart"></canvas>
+            </div>
+        </div>
+    </div>
+    {% elif vol_data and vol_data.error %}
+    <div class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <p class="text-red-800 dark:text-red-200">Error running multi-asset backtest: {{ vol_data.error }}</p>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <script>
@@ -544,6 +625,159 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial render with all data
     updateForRange('all');
+    {% endif %}
+
+    // Multi-Asset Volatility Charts
+    {% if vol_data and not vol_data.error and vol_data.chart_data %}
+    const volChartData = {{ vol_data.chart_data | tojson }};
+
+    // Sample data for charts (every 5th point to reduce density)
+    const sampledVolData = volChartData.filter((d, i) => i % 5 === 0 || i === volChartData.length - 1);
+
+    // Asset Weight History Chart
+    const weightCtx = document.getElementById('weightChart').getContext('2d');
+    new Chart(weightCtx, {
+        type: 'line',
+        data: {
+            labels: sampledVolData.map(d => d.date),
+            datasets: [
+                {
+                    label: 'BTC Weight',
+                    data: sampledVolData.map(d => d.btc_weight * 100),
+                    borderColor: '#F7931A',
+                    backgroundColor: 'rgba(247, 147, 26, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    pointRadius: 0,
+                    tension: 0.3
+                },
+                {
+                    label: 'ETH Weight',
+                    data: sampledVolData.map(d => d.eth_weight * 100),
+                    borderColor: '#627EEA',
+                    backgroundColor: 'rgba(98, 126, 234, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    pointRadius: 0,
+                    tension: 0.3
+                },
+                {
+                    label: 'SOL Weight',
+                    data: sampledVolData.map(d => d.sol_weight * 100),
+                    borderColor: '#00FFA3',
+                    backgroundColor: 'rgba(0, 255, 163, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    pointRadius: 0,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { color: document.documentElement.classList.contains('dark') ? '#fff' : '#374151' }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'category',
+                    ticks: { maxTicksLimit: 10, color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280' },
+                    grid: { display: false }
+                },
+                y: {
+                    min: 0,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) { return value + '%'; },
+                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
+                    },
+                    grid: { color: document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }
+                }
+            }
+        }
+    });
+
+    // Volatility History Chart
+    const volHistCtx = document.getElementById('volChart').getContext('2d');
+    new Chart(volHistCtx, {
+        type: 'line',
+        data: {
+            labels: sampledVolData.map(d => d.date),
+            datasets: [
+                {
+                    label: 'BTC Vol',
+                    data: sampledVolData.map(d => d.btc_vol),
+                    borderColor: '#F7931A',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.3
+                },
+                {
+                    label: 'ETH Vol',
+                    data: sampledVolData.map(d => d.eth_vol),
+                    borderColor: '#627EEA',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.3
+                },
+                {
+                    label: 'SOL Vol',
+                    data: sampledVolData.map(d => d.sol_vol),
+                    borderColor: '#00FFA3',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { color: document.documentElement.classList.contains('dark') ? '#fff' : '#374151' }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y.toFixed(0) + '%';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'category',
+                    ticks: { maxTicksLimit: 10, color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280' },
+                    grid: { display: false }
+                },
+                y: {
+                    ticks: {
+                        callback: function(value) { return value + '%'; },
+                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
+                    },
+                    grid: { color: document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }
+                }
+            }
+        }
+    });
     {% endif %}
 });
 </script>
