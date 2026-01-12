@@ -42,13 +42,11 @@
                 <p class="text-4xl font-bold
                     {% if btc_data.current_position == 'Overweight' %}text-green-400
                     {% elif btc_data.current_position == 'Neutral' %}text-yellow-400
-                    {% elif btc_data.current_position == 'Underweight' %}text-purple-400
                     {% else %}text-red-400{% endif %}">
                     {{ btc_data.current_position }}
                 </p>
                 <p class="text-sm text-gray-300 mt-1">
                     {% if btc_data.current_position == 'Overweight' %}200% Allocation
-                    {% elif btc_data.current_position == 'Neutral' %}50% Allocation
                     {% elif btc_data.current_position == 'Short' %}-25% Allocation
                     {% else %}0% Allocation{% endif %}
                 </p>
