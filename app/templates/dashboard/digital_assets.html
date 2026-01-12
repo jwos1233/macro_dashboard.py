@@ -1121,6 +1121,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update everything based on selected range
     function updateForRange(range) {
         currentRange = range;
+
+        // Update time period label FIRST (before any data processing)
+        const periodLabels = {
+            'all': 'All Time',
+            '2y': 'Last 2 Years',
+            '1y': 'Last 1 Year',
+            '6m': 'Last 6 Months',
+            'ytd': 'Year to Date'
+        };
+        const timePeriodEl = document.getElementById('summary-time-period');
+        if (timePeriodEl) {
+            timePeriodEl.textContent = periodLabels[range] || 'All Time';
+        }
+
         const filteredData = filterDataByRange(fullPriceData, range);
 
         if (filteredData.length < 2) {
@@ -1166,19 +1180,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.className = 'px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border-l border-gray-300 dark:border-gray-600 first:border-l-0';
             }
         });
-
-        // Update time period label
-        const periodLabels = {
-            'all': 'All Time',
-            '2y': 'Last 2 Years',
-            '1y': 'Last 1 Year',
-            '6m': 'Last 6 Months',
-            'ytd': 'Year to Date'
-        };
-        const timePeriodEl = document.getElementById('summary-time-period');
-        if (timePeriodEl) {
-            timePeriodEl.textContent = periodLabels[range] || 'All Time';
-        }
     }
 
     // Set up button click handlers
