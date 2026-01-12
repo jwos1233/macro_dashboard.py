@@ -5,15 +5,25 @@
 {% block content %}
 <div class="space-y-6">
     <!-- Header -->
-    <div class="flex justify-between items-center">
+    <div class="flex justify-between items-center flex-wrap gap-4">
         <div>
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Digital Asset Framework</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400">BTC allocation based on quad regime with EMA trend filter</p>
         </div>
-        <div class="text-sm text-gray-500 dark:text-gray-400">
-            {% if btc_data.generated_at %}
-            Generated: {{ btc_data.generated_at }}
-            {% endif %}
+        <div class="flex items-center gap-4">
+            <!-- Time Range Filter Buttons -->
+            <div class="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600" id="timeRangeFilter">
+                <button data-range="all" class="px-3 py-1.5 text-sm font-medium bg-navy text-white">All</button>
+                <button data-range="2y" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border-l border-gray-300 dark:border-gray-600">2Y</button>
+                <button data-range="1y" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border-l border-gray-300 dark:border-gray-600">1Y</button>
+                <button data-range="6m" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border-l border-gray-300 dark:border-gray-600">6M</button>
+                <button data-range="ytd" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border-l border-gray-300 dark:border-gray-600">YTD</button>
+            </div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">
+                {% if btc_data.generated_at %}
+                Generated: {{ btc_data.generated_at }}
+                {% endif %}
+            </div>
         </div>
     </div>
 
@@ -56,23 +66,23 @@
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <p class="text-sm text-gray-500 dark:text-gray-400">Strategy Return</p>
-            <p class="text-2xl font-bold {% if btc_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
+            <p id="stat-strategy-return" class="text-2xl font-bold {% if btc_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
                 {{ "%.1f"|format(btc_data.strategy.total_return or 0) }}%
             </p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <p class="text-sm text-gray-500 dark:text-gray-400">Buy & Hold Return</p>
-            <p class="text-2xl font-bold {% if btc_data.buyhold.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
+            <p id="stat-buyhold-return" class="text-2xl font-bold {% if btc_data.buyhold.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
                 {{ "%.1f"|format(btc_data.buyhold.total_return or 0) }}%
             </p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <p class="text-sm text-gray-500 dark:text-gray-400">Strategy Sharpe</p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ "%.2f"|format(btc_data.strategy.sharpe or 0) }}</p>
+            <p id="stat-strategy-sharpe" class="text-2xl font-bold text-gray-900 dark:text-white">{{ "%.2f"|format(btc_data.strategy.sharpe or 0) }}</p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <p class="text-sm text-gray-500 dark:text-gray-400">Buy & Hold Sharpe</p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ "%.2f"|format(btc_data.buyhold.sharpe or 0) }}</p>
+            <p id="stat-buyhold-sharpe" class="text-2xl font-bold text-gray-900 dark:text-white">{{ "%.2f"|format(btc_data.buyhold.sharpe or 0) }}</p>
         </div>
     </div>
 
@@ -80,23 +90,23 @@
     <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <p class="text-sm text-gray-500 dark:text-gray-400">Strategy Max DD</p>
-            <p class="text-xl font-bold text-warning">{{ "%.1f"|format(btc_data.strategy.max_drawdown or 0) }}%</p>
+            <p id="stat-strategy-maxdd" class="text-xl font-bold text-warning">{{ "%.1f"|format(btc_data.strategy.max_drawdown or 0) }}%</p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <p class="text-sm text-gray-500 dark:text-gray-400">Buy & Hold Max DD</p>
-            <p class="text-xl font-bold text-warning">{{ "%.1f"|format(btc_data.buyhold.max_drawdown or 0) }}%</p>
+            <p id="stat-buyhold-maxdd" class="text-xl font-bold text-warning">{{ "%.1f"|format(btc_data.buyhold.max_drawdown or 0) }}%</p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <p class="text-sm text-gray-500 dark:text-gray-400">Strategy Volatility</p>
-            <p class="text-xl font-bold text-gray-900 dark:text-white">{{ "%.1f"|format(btc_data.strategy.volatility or 0) }}%</p>
+            <p id="stat-strategy-vol" class="text-xl font-bold text-gray-900 dark:text-white">{{ "%.1f"|format(btc_data.strategy.volatility or 0) }}%</p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <p class="text-sm text-gray-500 dark:text-gray-400">Position Changes</p>
-            <p class="text-xl font-bold text-gray-900 dark:text-white">{{ btc_data.regime_history|length }}</p>
+            <p id="stat-position-changes" class="text-xl font-bold text-gray-900 dark:text-white">{{ btc_data.regime_history|length }}</p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-            <p class="text-sm text-gray-500 dark:text-gray-400">Final Value (${{ "{:,.0f}".format(btc_data.parameters.initial_capital or 10000) }} start)</p>
-            <p class="text-xl font-bold text-gray-900 dark:text-white">${{ "{:,.0f}".format(btc_data.strategy.final_value or 10000) }}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400" id="stat-final-value-label">Final Value (${{ "{:,.0f}".format(btc_data.parameters.initial_capital or 10000) }} start)</p>
+            <p id="stat-final-value" class="text-xl font-bold text-gray-900 dark:text-white">${{ "{:,.0f}".format(btc_data.strategy.final_value or 10000) }}</p>
         </div>
     </div>
 
@@ -119,21 +129,35 @@
     <!-- Position Distribution -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Position Distribution</h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {% for pos_type, pct in btc_data.position_breakdown.items() %}
+        <div id="position-distribution" class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div class="text-center">
                 <div class="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden mb-2">
-                    <div class="h-full
-                        {% if pos_type == 'Overweight' %}bg-green-500
-                        {% elif pos_type == 'Neutral' %}bg-yellow-500
-                        {% elif pos_type == 'Underweight' %}bg-purple-500
-                        {% else %}bg-red-500{% endif %}"
-                        style="width: {{ pct }}%"></div>
+                    <div id="pos-bar-overweight" class="h-full bg-green-500" style="width: {{ btc_data.position_breakdown.get('Overweight', 0) }}%"></div>
                 </div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ pos_type }}</p>
-                <p class="text-2xl font-bold text-gray-700 dark:text-gray-300">{{ "%.1f"|format(pct) }}%</p>
+                <p class="text-sm font-medium text-gray-900 dark:text-white">Overweight</p>
+                <p id="pos-pct-overweight" class="text-2xl font-bold text-gray-700 dark:text-gray-300">{{ "%.1f"|format(btc_data.position_breakdown.get('Overweight', 0)) }}%</p>
             </div>
-            {% endfor %}
+            <div class="text-center">
+                <div class="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden mb-2">
+                    <div id="pos-bar-neutral" class="h-full bg-yellow-500" style="width: {{ btc_data.position_breakdown.get('Neutral', 0) }}%"></div>
+                </div>
+                <p class="text-sm font-medium text-gray-900 dark:text-white">Neutral</p>
+                <p id="pos-pct-neutral" class="text-2xl font-bold text-gray-700 dark:text-gray-300">{{ "%.1f"|format(btc_data.position_breakdown.get('Neutral', 0)) }}%</p>
+            </div>
+            <div class="text-center">
+                <div class="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden mb-2">
+                    <div id="pos-bar-underweight" class="h-full bg-purple-500" style="width: {{ btc_data.position_breakdown.get('Underweight', 0) }}%"></div>
+                </div>
+                <p class="text-sm font-medium text-gray-900 dark:text-white">Underweight</p>
+                <p id="pos-pct-underweight" class="text-2xl font-bold text-gray-700 dark:text-gray-300">{{ "%.1f"|format(btc_data.position_breakdown.get('Underweight', 0)) }}%</p>
+            </div>
+            <div class="text-center">
+                <div class="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden mb-2">
+                    <div id="pos-bar-short" class="h-full bg-red-500" style="width: {{ btc_data.position_breakdown.get('Short', 0) }}%"></div>
+                </div>
+                <p class="text-sm font-medium text-gray-900 dark:text-white">Short</p>
+                <p id="pos-pct-short" class="text-2xl font-bold text-gray-700 dark:text-gray-300">{{ "%.1f"|format(btc_data.position_breakdown.get('Short', 0)) }}%</p>
+            </div>
         </div>
     </div>
 
@@ -143,248 +167,383 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     {% if not btc_data.error and btc_data.chart_data %}
-    const priceData = {{ btc_data.chart_data | tojson }};
+    const fullPriceData = {{ btc_data.chart_data | tojson }};
+    const initialCapital = {{ btc_data.parameters.initial_capital or 10000 }};
+    let currentRange = 'all';
+    let btcChart = null;
+    let equityChart = null;
 
     // Position color mapping
     const positionColors = {
-        'Overweight': 'rgba(34, 197, 94, 0.3)',   // green
-        'Neutral': 'rgba(234, 179, 8, 0.3)',      // yellow
-        'Underweight': 'rgba(168, 85, 247, 0.3)', // purple
-        'Short': 'rgba(239, 68, 68, 0.3)'        // red
+        'Overweight': 'rgba(34, 197, 94, 0.3)',
+        'Neutral': 'rgba(234, 179, 8, 0.3)',
+        'Underweight': 'rgba(168, 85, 247, 0.3)',
+        'Short': 'rgba(239, 68, 68, 0.3)'
     };
 
-    // BTC Price Chart with colored background
-    const btcCtx = document.getElementById('btcChart').getContext('2d');
+    // Filter data by date range
+    function filterDataByRange(data, range) {
+        if (range === 'all') return data;
 
-    // Create background color array based on positions
-    const backgroundColors = priceData.map(d => positionColors[d.position] || 'rgba(128, 128, 128, 0.1)');
+        const now = new Date();
+        let cutoffDate;
 
-    // Group consecutive same-position periods for background
-    const annotations = [];
-    let currentPos = null;
-    let startIdx = 0;
-
-    priceData.forEach((d, idx) => {
-        if (d.position !== currentPos) {
-            if (currentPos !== null && idx > 0) {
-                annotations.push({
-                    type: 'box',
-                    xMin: priceData[startIdx].date,
-                    xMax: priceData[idx - 1].date,
-                    backgroundColor: positionColors[currentPos],
-                    borderWidth: 0
-                });
-            }
-            currentPos = d.position;
-            startIdx = idx;
+        switch(range) {
+            case '2y':
+                cutoffDate = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate());
+                break;
+            case '1y':
+                cutoffDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+                break;
+            case '6m':
+                cutoffDate = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+                break;
+            case 'ytd':
+                cutoffDate = new Date(now.getFullYear(), 0, 1);
+                break;
+            default:
+                return data;
         }
-    });
-    // Add last segment
-    if (currentPos !== null) {
-        annotations.push({
-            type: 'box',
-            xMin: priceData[startIdx].date,
-            xMax: priceData[priceData.length - 1].date,
-            backgroundColor: positionColors[currentPos],
-            borderWidth: 0
+
+        return data.filter(d => new Date(d.date) >= cutoffDate);
+    }
+
+    // Calculate statistics for filtered data
+    function calculateStats(data) {
+        if (data.length < 2) return null;
+
+        const startValue = data[0].portfolio_value;
+        const endValue = data[data.length - 1].portfolio_value;
+        const startBuyhold = data[0].buyhold_value;
+        const endBuyhold = data[data.length - 1].buyhold_value;
+
+        // Returns
+        const strategyReturn = ((endValue / startValue) - 1) * 100;
+        const buyholdReturn = ((endBuyhold / startBuyhold) - 1) * 100;
+
+        // Daily returns for volatility/sharpe
+        const strategyReturns = [];
+        const buyholdReturns = [];
+        for (let i = 1; i < data.length; i++) {
+            strategyReturns.push((data[i].portfolio_value / data[i-1].portfolio_value) - 1);
+            buyholdReturns.push((data[i].buyhold_value / data[i-1].buyhold_value) - 1);
+        }
+
+        // Volatility (annualized)
+        const strategyVol = stdDev(strategyReturns) * Math.sqrt(252) * 100;
+        const buyholdVol = stdDev(buyholdReturns) * Math.sqrt(252) * 100;
+
+        // Annualized return
+        const tradingDays = data.length;
+        const years = tradingDays / 252;
+        const strategyAnnual = (Math.pow(endValue / startValue, 1/years) - 1) * 100;
+        const buyholdAnnual = (Math.pow(endBuyhold / startBuyhold, 1/years) - 1) * 100;
+
+        // Sharpe (assuming 5% risk-free)
+        const strategySharpe = strategyVol > 0 ? (strategyAnnual - 5) / strategyVol : 0;
+        const buyholdSharpe = buyholdVol > 0 ? (buyholdAnnual - 5) / buyholdVol : 0;
+
+        // Max Drawdown
+        const strategyMaxDD = calcMaxDrawdown(data.map(d => d.portfolio_value));
+        const buyholdMaxDD = calcMaxDrawdown(data.map(d => d.buyhold_value));
+
+        // Position breakdown
+        const positionCounts = { Overweight: 0, Neutral: 0, Underweight: 0, Short: 0 };
+        data.forEach(d => {
+            if (positionCounts.hasOwnProperty(d.position)) {
+                positionCounts[d.position]++;
+            }
+        });
+        const total = data.length;
+        const positionPcts = {
+            Overweight: (positionCounts.Overweight / total) * 100,
+            Neutral: (positionCounts.Neutral / total) * 100,
+            Underweight: (positionCounts.Underweight / total) * 100,
+            Short: (positionCounts.Short / total) * 100
+        };
+
+        // Count position changes
+        let positionChanges = 0;
+        for (let i = 1; i < data.length; i++) {
+            if (data[i].position !== data[i-1].position) positionChanges++;
+        }
+
+        return {
+            strategyReturn,
+            buyholdReturn,
+            strategySharpe,
+            buyholdSharpe,
+            strategyMaxDD,
+            buyholdMaxDD,
+            strategyVol,
+            positionPcts,
+            positionChanges,
+            finalValue: endValue,
+            startValue
+        };
+    }
+
+    function stdDev(arr) {
+        if (arr.length === 0) return 0;
+        const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+        const variance = arr.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / arr.length;
+        return Math.sqrt(variance);
+    }
+
+    function calcMaxDrawdown(values) {
+        let maxDD = 0;
+        let peak = values[0];
+        for (let i = 1; i < values.length; i++) {
+            if (values[i] > peak) peak = values[i];
+            const dd = (values[i] - peak) / peak;
+            if (dd < maxDD) maxDD = dd;
+        }
+        return maxDD * 100;
+    }
+
+    // Update statistics display
+    function updateStats(stats) {
+        if (!stats) return;
+
+        // Update return colors
+        const stratRetEl = document.getElementById('stat-strategy-return');
+        const bhRetEl = document.getElementById('stat-buyhold-return');
+
+        stratRetEl.textContent = stats.strategyReturn.toFixed(1) + '%';
+        stratRetEl.className = 'text-2xl font-bold ' + (stats.strategyReturn >= 0 ? 'text-success' : 'text-warning');
+
+        bhRetEl.textContent = stats.buyholdReturn.toFixed(1) + '%';
+        bhRetEl.className = 'text-2xl font-bold ' + (stats.buyholdReturn >= 0 ? 'text-success' : 'text-warning');
+
+        document.getElementById('stat-strategy-sharpe').textContent = stats.strategySharpe.toFixed(2);
+        document.getElementById('stat-buyhold-sharpe').textContent = stats.buyholdSharpe.toFixed(2);
+        document.getElementById('stat-strategy-maxdd').textContent = stats.strategyMaxDD.toFixed(1) + '%';
+        document.getElementById('stat-buyhold-maxdd').textContent = stats.buyholdMaxDD.toFixed(1) + '%';
+        document.getElementById('stat-strategy-vol').textContent = stats.strategyVol.toFixed(1) + '%';
+        document.getElementById('stat-position-changes').textContent = stats.positionChanges;
+        document.getElementById('stat-final-value').textContent = '$' + stats.finalValue.toLocaleString(undefined, {maximumFractionDigits: 0});
+        document.getElementById('stat-final-value-label').textContent = 'Final Value ($' + stats.startValue.toLocaleString(undefined, {maximumFractionDigits: 0}) + ' start)';
+
+        // Update position distribution
+        ['overweight', 'neutral', 'underweight', 'short'].forEach(pos => {
+            const key = pos.charAt(0).toUpperCase() + pos.slice(1);
+            const pct = stats.positionPcts[key] || 0;
+            document.getElementById('pos-bar-' + pos).style.width = pct + '%';
+            document.getElementById('pos-pct-' + pos).textContent = pct.toFixed(1) + '%';
         });
     }
 
-    new Chart(btcCtx, {
-        type: 'line',
-        data: {
-            labels: priceData.map(d => d.date),
-            datasets: [
-                {
-                    label: 'BTC Price',
-                    data: priceData.map(d => d.btc_price),
-                    borderColor: '#D4A857',
-                    backgroundColor: 'transparent',
-                    borderWidth: 2,
-                    fill: false,
-                    pointRadius: 0,
-                    tension: 0.1,
-                    yAxisID: 'y'
-                },
-                {
-                    label: 'EMA',
-                    data: priceData.map(d => d.ema),
-                    borderColor: '#6B7280',
-                    backgroundColor: 'transparent',
-                    borderWidth: 1,
-                    borderDash: [5, 5],
-                    fill: false,
-                    pointRadius: 0,
-                    tension: 0.1,
-                    yAxisID: 'y'
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            },
-            plugins: {
-                legend: {
-                    position: 'top',
-                    labels: {
-                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#374151'
+    // Create BTC chart
+    function createBtcChart(data) {
+        const btcCtx = document.getElementById('btcChart').getContext('2d');
+
+        if (btcChart) btcChart.destroy();
+
+        btcChart = new Chart(btcCtx, {
+            type: 'line',
+            data: {
+                labels: data.map(d => d.date),
+                datasets: [
+                    {
+                        label: 'BTC Price',
+                        data: data.map(d => d.btc_price),
+                        borderColor: '#D4A857',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        fill: false,
+                        pointRadius: 0,
+                        tension: 0.1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'EMA',
+                        data: data.map(d => d.ema),
+                        borderColor: '#6B7280',
+                        backgroundColor: 'transparent',
+                        borderWidth: 1,
+                        borderDash: [5, 5],
+                        fill: false,
+                        pointRadius: 0,
+                        tension: 0.1,
+                        yAxisID: 'y'
                     }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const idx = context.dataIndex;
-                            const position = priceData[idx].position;
-                            if (context.dataset.label === 'BTC Price') {
-                                return 'BTC: $' + context.parsed.y.toLocaleString() + ' (' + position + ')';
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { color: document.documentElement.classList.contains('dark') ? '#fff' : '#374151' }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const idx = context.dataIndex;
+                                const position = data[idx].position;
+                                if (context.dataset.label === 'BTC Price') {
+                                    return 'BTC: $' + context.parsed.y.toLocaleString() + ' (' + position + ')';
+                                }
+                                return context.dataset.label + ': $' + context.parsed.y.toLocaleString();
                             }
-                            return context.dataset.label + ': $' + context.parsed.y.toLocaleString();
                         }
                     }
-                }
-            },
-            scales: {
-                x: {
-                    type: 'category',
-                    ticks: {
-                        maxTicksLimit: 12,
-                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
-                    },
-                    grid: {
-                        display: false
-                    }
                 },
-                y: {
-                    type: 'logarithmic',
-                    position: 'left',
-                    ticks: {
-                        callback: function(value) {
-                            return '$' + value.toLocaleString();
+                scales: {
+                    x: {
+                        type: 'category',
+                        ticks: { maxTicksLimit: 12, color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280' },
+                        grid: { display: false }
+                    },
+                    y: {
+                        type: 'logarithmic',
+                        position: 'left',
+                        ticks: {
+                            callback: function(value) { return '$' + value.toLocaleString(); },
+                            color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
                         },
-                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
-                    },
-                    grid: {
-                        color: document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
-                    }
-                }
-            }
-        },
-        plugins: [{
-            id: 'customBackground',
-            beforeDraw: function(chart) {
-                const ctx = chart.ctx;
-                const chartArea = chart.chartArea;
-                const xAxis = chart.scales.x;
-                const yAxis = chart.scales.y;
-
-                let currentPos = null;
-                let startX = null;
-
-                priceData.forEach((d, idx) => {
-                    const x = xAxis.getPixelForValue(d.date);
-
-                    if (d.position !== currentPos) {
-                        if (currentPos !== null && startX !== null) {
-                            ctx.fillStyle = positionColors[currentPos];
-                            ctx.fillRect(startX, chartArea.top, x - startX, chartArea.bottom - chartArea.top);
-                        }
-                        currentPos = d.position;
-                        startX = x;
-                    }
-                });
-                // Fill last segment
-                if (currentPos !== null && startX !== null) {
-                    ctx.fillStyle = positionColors[currentPos];
-                    ctx.fillRect(startX, chartArea.top, chartArea.right - startX, chartArea.bottom - chartArea.top);
-                }
-            }
-        }]
-    });
-
-    // Equity Curves Chart (using data from priceData which contains portfolio_value and buyhold_value)
-    const equityCtx = document.getElementById('equityChart').getContext('2d');
-    new Chart(equityCtx, {
-        type: 'line',
-        data: {
-            labels: priceData.map(d => d.date),
-            datasets: [
-                {
-                    label: 'Quad Framework',
-                    data: priceData.map(d => d.portfolio_value),
-                    borderColor: '#D4A857',
-                    backgroundColor: 'transparent',
-                    borderWidth: 2,
-                    fill: false,
-                    pointRadius: 0,
-                    tension: 0.1
-                },
-                {
-                    label: 'Buy & Hold',
-                    data: priceData.map(d => d.buyhold_value),
-                    borderColor: '#6B7280',
-                    backgroundColor: 'transparent',
-                    borderWidth: 1.5,
-                    fill: false,
-                    pointRadius: 0,
-                    tension: 0.1
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            },
-            plugins: {
-                legend: {
-                    position: 'top',
-                    labels: {
-                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#374151'
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return context.dataset.label + ': $' + context.parsed.y.toLocaleString(undefined, {
-                                minimumFractionDigits: 0,
-                                maximumFractionDigits: 0
-                            });
-                        }
+                        grid: { color: document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }
                     }
                 }
             },
-            scales: {
-                x: {
-                    type: 'category',
-                    ticks: {
-                        maxTicksLimit: 12,
-                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
+            plugins: [{
+                id: 'customBackground',
+                beforeDraw: function(chart) {
+                    const ctx = chart.ctx;
+                    const chartArea = chart.chartArea;
+                    const xAxis = chart.scales.x;
+                    let currentPos = null;
+                    let startX = null;
+
+                    data.forEach((d, idx) => {
+                        const x = xAxis.getPixelForValue(d.date);
+                        if (d.position !== currentPos) {
+                            if (currentPos !== null && startX !== null) {
+                                ctx.fillStyle = positionColors[currentPos];
+                                ctx.fillRect(startX, chartArea.top, x - startX, chartArea.bottom - chartArea.top);
+                            }
+                            currentPos = d.position;
+                            startX = x;
+                        }
+                    });
+                    if (currentPos !== null && startX !== null) {
+                        ctx.fillStyle = positionColors[currentPos];
+                        ctx.fillRect(startX, chartArea.top, chartArea.right - startX, chartArea.bottom - chartArea.top);
+                    }
+                }
+            }]
+        });
+    }
+
+    // Create Equity chart (normalized to start at same point for comparison)
+    function createEquityChart(data) {
+        const equityCtx = document.getElementById('equityChart').getContext('2d');
+
+        if (equityChart) equityChart.destroy();
+
+        // Normalize both curves to start at 10000 for fair comparison
+        const startStrategy = data[0].portfolio_value;
+        const startBuyhold = data[0].buyhold_value;
+        const normalizedStrategy = data.map(d => (d.portfolio_value / startStrategy) * 10000);
+        const normalizedBuyhold = data.map(d => (d.buyhold_value / startBuyhold) * 10000);
+
+        equityChart = new Chart(equityCtx, {
+            type: 'line',
+            data: {
+                labels: data.map(d => d.date),
+                datasets: [
+                    {
+                        label: 'Quad Framework',
+                        data: normalizedStrategy,
+                        borderColor: '#D4A857',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        fill: false,
+                        pointRadius: 0,
+                        tension: 0.1
                     },
-                    grid: {
-                        display: false
+                    {
+                        label: 'Buy & Hold',
+                        data: normalizedBuyhold,
+                        borderColor: '#6B7280',
+                        backgroundColor: 'transparent',
+                        borderWidth: 1.5,
+                        fill: false,
+                        pointRadius: 0,
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { color: document.documentElement.classList.contains('dark') ? '#fff' : '#374151' }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': $' + context.parsed.y.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+                            }
+                        }
                     }
                 },
-                y: {
-                    type: 'logarithmic',
-                    ticks: {
-                        callback: function(value) {
-                            return '$' + value.toLocaleString();
+                scales: {
+                    x: {
+                        type: 'category',
+                        ticks: { maxTicksLimit: 12, color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280' },
+                        grid: { display: false }
+                    },
+                    y: {
+                        type: 'logarithmic',
+                        ticks: {
+                            callback: function(value) { return '$' + value.toLocaleString(); },
+                            color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
                         },
-                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
-                    },
-                    grid: {
-                        color: document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+                        grid: { color: document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }
                     }
                 }
             }
+        });
+    }
+
+    // Update everything based on selected range
+    function updateForRange(range) {
+        currentRange = range;
+        const filteredData = filterDataByRange(fullPriceData, range);
+
+        if (filteredData.length < 2) {
+            console.warn('Not enough data for range:', range);
+            return;
         }
+
+        const stats = calculateStats(filteredData);
+        updateStats(stats);
+        createBtcChart(filteredData);
+        createEquityChart(filteredData);
+
+        // Update button styles
+        document.querySelectorAll('#timeRangeFilter button').forEach(btn => {
+            if (btn.dataset.range === range) {
+                btn.className = 'px-3 py-1.5 text-sm font-medium bg-navy text-white border-l border-gray-300 dark:border-gray-600 first:border-l-0';
+            } else {
+                btn.className = 'px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border-l border-gray-300 dark:border-gray-600 first:border-l-0';
+            }
+        });
+    }
+
+    // Set up button click handlers
+    document.querySelectorAll('#timeRangeFilter button').forEach(btn => {
+        btn.addEventListener('click', () => updateForRange(btn.dataset.range));
     });
+
+    // Initial render with all data
+    updateForRange('all');
     {% endif %}
 });
 </script>
