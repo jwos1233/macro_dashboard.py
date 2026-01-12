@@ -168,9 +168,9 @@
         </div>
     </div>
 
-    <!-- Equity Curves Comparison -->
+    <!-- Equity Curves Comparison - All Strategies -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Equity Curve: Strategy vs Buy & Hold</h3>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Equity Curve: All Strategies</h3>
         <div class="h-80">
             <canvas id="equityChart"></canvas>
         </div>
@@ -367,36 +367,10 @@
     </div>
     {% endif %}
 
-    <!-- Strategy Comparison Equity Curves -->
+    <!-- Strategy Comparison Table -->
     {% if vol_data and not vol_data.error and vol_chase_data and not vol_chase_data.error %}
     <div class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Strategy Comparison</h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Equity curves comparing Inverse Vol vs Vol Chase vs BTC Buy & Hold</p>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Inverse Vol vs Buy & Hold -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Inverse Vol Strategy vs Buy & Hold</h3>
-                <div class="h-64">
-                    <canvas id="invVolEquityChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Vol Chase vs Buy & Hold -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Vol Chase Strategy vs Buy & Hold</h3>
-                <div class="h-64">
-                    <canvas id="volChaseEquityChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Summary Comparison Table -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Performance Summary</h3>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -876,44 +850,83 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Create Equity chart (normalized to start at same point for comparison)
-    function createEquityChart(data) {
+    // Create Equity chart with all 4 strategies (normalized to start at same point)
+    function createEquityChart(btcData, invVolData, volChaseData) {
         const equityCtx = document.getElementById('equityChart').getContext('2d');
 
         if (equityChart) equityChart.destroy();
 
-        // Normalize both curves to start at 10000 for fair comparison
-        const startStrategy = data[0].portfolio_value;
-        const startBuyhold = data[0].buyhold_value;
-        const normalizedStrategy = data.map(d => (d.portfolio_value / startStrategy) * 10000);
-        const normalizedBuyhold = data.map(d => (d.buyhold_value / startBuyhold) * 10000);
+        // Use BTC data for dates and buy & hold baseline
+        const labels = btcData.map(d => d.date);
+
+        // Normalize all curves to start at 10000 for fair comparison
+        const startBtc = btcData[0].portfolio_value;
+        const startBuyhold = btcData[0].buyhold_value;
+        const normalizedBtc = btcData.map(d => (d.portfolio_value / startBtc) * 10000);
+        const normalizedBuyhold = btcData.map(d => (d.buyhold_value / startBuyhold) * 10000);
+
+        // Build datasets array
+        const datasets = [
+            {
+                label: 'BTC-Only',
+                data: normalizedBtc,
+                borderColor: '#D4A857',
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                fill: false,
+                pointRadius: 0,
+                tension: 0.1
+            },
+            {
+                label: 'Buy & Hold',
+                data: normalizedBuyhold,
+                borderColor: '#6B7280',
+                backgroundColor: 'transparent',
+                borderWidth: 1.5,
+                fill: false,
+                pointRadius: 0,
+                tension: 0.1
+            }
+        ];
+
+        // Add Inverse Vol if available
+        if (invVolData && invVolData.length > 0) {
+            const startInvVol = invVolData[0].portfolio_value;
+            // Sample to match BTC data length if needed
+            const invVolNormalized = invVolData.map(d => (d.portfolio_value / startInvVol) * 10000);
+            datasets.push({
+                label: 'Inverse Vol',
+                data: invVolNormalized,
+                borderColor: '#F59E0B',
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                fill: false,
+                pointRadius: 0,
+                tension: 0.1
+            });
+        }
+
+        // Add Vol Chase if available
+        if (volChaseData && volChaseData.length > 0) {
+            const startVolChase = volChaseData[0].portfolio_value;
+            const volChaseNormalized = volChaseData.map(d => (d.portfolio_value / startVolChase) * 10000);
+            datasets.push({
+                label: 'Vol Chase',
+                data: volChaseNormalized,
+                borderColor: '#A855F7',
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                fill: false,
+                pointRadius: 0,
+                tension: 0.1
+            });
+        }
 
         equityChart = new Chart(equityCtx, {
             type: 'line',
             data: {
-                labels: data.map(d => d.date),
-                datasets: [
-                    {
-                        label: 'Quad Framework',
-                        data: normalizedStrategy,
-                        borderColor: '#D4A857',
-                        backgroundColor: 'transparent',
-                        borderWidth: 2,
-                        fill: false,
-                        pointRadius: 0,
-                        tension: 0.1
-                    },
-                    {
-                        label: 'Buy & Hold',
-                        data: normalizedBuyhold,
-                        borderColor: '#6B7280',
-                        backgroundColor: 'transparent',
-                        borderWidth: 1.5,
-                        fill: false,
-                        pointRadius: 0,
-                        tension: 0.1
-                    }
-                ]
+                labels: labels,
+                datasets: datasets
             },
             options: {
                 responsive: true,
@@ -1118,27 +1131,29 @@ document.addEventListener('DOMContentLoaded', function() {
         const stats = calculateStats(filteredData);
         updateStats(stats);
         createBtcChart(filteredData);
-        createEquityChart(filteredData);
 
         // Calculate and update multi-asset stats
         let invVolStats = null;
         let volChaseStats = null;
+        let filteredInvVol = null;
+        let filteredVolChase = null;
 
-        // Update multi-asset equity comparison charts and stats if data is available
+        // Filter multi-asset data if available
         if (fullInvVolData) {
-            const filteredInvVol = filterDataByRange(fullInvVolData, range);
+            filteredInvVol = filterDataByRange(fullInvVolData, range);
             if (filteredInvVol.length >= 2) {
-                createInvVolEquityChart(filteredInvVol);
                 invVolStats = calculateMultiAssetStats(filteredInvVol);
             }
         }
         if (fullVolChaseData) {
-            const filteredVolChase = filterDataByRange(fullVolChaseData, range);
+            filteredVolChase = filterDataByRange(fullVolChaseData, range);
             if (filteredVolChase.length >= 2) {
-                createVolChaseEquityChart(filteredVolChase);
                 volChaseStats = calculateMultiAssetStats(filteredVolChase);
             }
         }
+
+        // Create combined equity chart with all strategies
+        createEquityChart(filteredData, filteredInvVol, filteredVolChase);
 
         // Update all multi-asset stats displays (including summary table)
         updateMultiAssetStats(invVolStats, volChaseStats, stats);
