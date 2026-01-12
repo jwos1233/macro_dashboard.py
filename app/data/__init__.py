@@ -1348,3 +1348,355 @@ def run_volatility_weighted_backtest() -> dict:
             'error': str(e),
             'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         }
+
+
+# Cache for volatility-weighted (high vol = high weight) framework
+_vol_chase_cache = None
+_vol_chase_cache_time = None
+
+
+def run_volatility_chase_backtest() -> dict:
+    """
+    Run multi-asset (BTC/ETH/SOL) backtest with volatility weighting.
+
+    Uses the same quad framework signals as BTC-only, but splits exposure
+    across BTC, ETH, SOL based on volatility (higher vol = higher weight).
+
+    This is a "volatility chasing" strategy that allocates more to
+    assets with higher recent volatility (momentum/trend following style).
+    """
+    global _vol_chase_cache, _vol_chase_cache_time
+
+    # Check cache
+    if _vol_chase_cache is not None and _vol_chase_cache_time is not None:
+        cache_age = datetime.now() - _vol_chase_cache_time
+        if cache_age < timedelta(hours=CACHE_DURATION_HOURS):
+            return _vol_chase_cache
+
+    try:
+        print("=" * 60, flush=True)
+        print("RUNNING VOLATILITY CHASE (HIGH VOL) BACKTEST", flush=True)
+        print("=" * 60, flush=True)
+
+        import numpy as np
+        import pandas as pd
+        import yfinance as yf
+        from config import QUAD_INDICATORS
+
+        # Parameters
+        INITIAL_CAPITAL = 10000
+        BACKTEST_YEARS = 5
+        MOMENTUM_DAYS = 50
+        EMA_PERIOD = 50
+        EMA_SMOOTHING = 20
+        VOL_LOOKBACK = 30
+
+        ASSETS = ['BTC-USD', 'ETH-USD', 'SOL-USD']
+        ASSET_NAMES = {'BTC-USD': 'BTC', 'ETH-USD': 'ETH', 'SOL-USD': 'SOL'}
+
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=BACKTEST_YEARS * 365 + 150)
+
+        print(f"Fetching crypto and indicator data...", flush=True)
+
+        # Fetch all crypto data
+        crypto_data = {}
+        for ticker in ASSETS:
+            data = yf.download(ticker, start=start_date, end=end_date, progress=False, auto_adjust=True)
+            if len(data) > 0:
+                if isinstance(data.columns, pd.MultiIndex):
+                    crypto_data[ticker] = data['Close'].iloc[:, 0]
+                else:
+                    crypto_data[ticker] = data['Close']
+
+        crypto_df = pd.DataFrame(crypto_data)
+        crypto_df = crypto_df.ffill().bfill()
+
+        # Calculate rolling volatility for each asset
+        crypto_returns = crypto_df.pct_change()
+        rolling_vol = crypto_returns.rolling(window=VOL_LOOKBACK).std() * np.sqrt(252)
+
+        # Calculate volatility weights (higher vol = higher weight)
+        def calc_vol_weights(vol_row):
+            """Calculate volatility weights (higher vol = higher weight)"""
+            valid_vols = vol_row.dropna()
+            if len(valid_vols) == 0:
+                return pd.Series({ticker: 1/len(ASSETS) for ticker in ASSETS})
+
+            # Normalize to sum to 1
+            weights = valid_vols / valid_vols.sum()
+
+            # Fill missing with equal weight
+            for ticker in ASSETS:
+                if ticker not in weights.index or pd.isna(weights[ticker]):
+                    weights[ticker] = 1 / len(ASSETS)
+
+            return weights[ASSETS]
+
+        vol_weights = rolling_vol.apply(calc_vol_weights, axis=1)
+
+        # Fetch indicator data for quad scoring
+        all_indicators = set()
+        for indicators in QUAD_INDICATORS.values():
+            all_indicators.update(indicators)
+
+        indicator_data = {}
+        for ticker in all_indicators:
+            try:
+                data = yf.download(ticker, start=start_date, end=end_date, progress=False, auto_adjust=True)
+                if len(data) > 0:
+                    if isinstance(data.columns, pd.MultiIndex):
+                        indicator_data[ticker] = data['Close'].iloc[:, 0]
+                    else:
+                        indicator_data[ticker] = data['Close']
+            except:
+                pass
+
+        indicator_df = pd.DataFrame(indicator_data)
+        indicator_df = indicator_df.ffill().bfill()
+
+        # Calculate momentum for quad scoring
+        momentum = indicator_df.pct_change(MOMENTUM_DAYS)
+
+        # Calculate quad scores
+        quad_scores = pd.DataFrame(index=momentum.index)
+        for quad, indicators in QUAD_INDICATORS.items():
+            quad_tickers = [t for t in indicators if t in momentum.columns]
+            if quad_tickers:
+                quad_scores[quad] = momentum[quad_tickers].mean(axis=1)
+
+        # Apply EMA smoothing
+        smoothed_scores = quad_scores.ewm(span=EMA_SMOOTHING, adjust=False).mean()
+
+        # Use BTC for EMA trend filter
+        btc_close = crypto_df['BTC-USD']
+        btc_ema = btc_close.ewm(span=EMA_PERIOD, adjust=False).mean()
+
+        # Align all data
+        common_dates = (btc_close.index
+                       .intersection(smoothed_scores.index)
+                       .intersection(btc_ema.index)
+                       .intersection(vol_weights.index)
+                       .intersection(crypto_df.index))
+
+        btc_close = btc_close.loc[common_dates]
+        btc_ema = btc_ema.loc[common_dates]
+        smoothed_scores = smoothed_scores.loc[common_dates]
+        vol_weights = vol_weights.loc[common_dates]
+        crypto_df = crypto_df.loc[common_dates]
+
+        # Warmup period
+        warmup = max(MOMENTUM_DAYS, EMA_PERIOD, EMA_SMOOTHING, VOL_LOOKBACK) + 10
+        btc_close = btc_close.iloc[warmup:]
+        btc_ema = btc_ema.iloc[warmup:]
+        smoothed_scores = smoothed_scores.iloc[warmup:]
+        vol_weights = vol_weights.iloc[warmup:]
+        crypto_df = crypto_df.iloc[warmup:]
+
+        print(f"Running volatility chase simulation...", flush=True)
+
+        # Initialize tracking
+        portfolio_value = pd.Series(index=btc_close.index, dtype=float)
+        btc_buy_hold = pd.Series(index=btc_close.index, dtype=float)
+        positions = pd.Series(index=btc_close.index, dtype=str)
+        allocations = pd.Series(index=btc_close.index, dtype=float)
+
+        # Track individual asset weights over time
+        asset_weights_history = {ticker: pd.Series(index=btc_close.index, dtype=float) for ticker in ASSETS}
+        asset_allocations_history = {ticker: pd.Series(index=btc_close.index, dtype=float) for ticker in ASSETS}
+        vol_history = {ticker: pd.Series(index=btc_close.index, dtype=float) for ticker in ASSETS}
+
+        # Portfolio state
+        cash = INITIAL_CAPITAL
+        holdings = {ticker: 0 for ticker in ASSETS}
+        buy_hold_btc = INITIAL_CAPITAL / btc_close.iloc[0]
+
+        regime_history = []
+        prev_allocation = 0
+        prev_weights = None
+
+        for i, date in enumerate(btc_close.index):
+            prices = {ticker: crypto_df.loc[date, ticker] for ticker in ASSETS}
+            ema_value = btc_ema.loc[date]
+            scores = smoothed_scores.loc[date].sort_values(ascending=False)
+            weights = vol_weights.loc[date]
+
+            top1 = scores.index[0]
+            top2 = scores.index[1]
+            above_ema = prices['BTC-USD'] > ema_value
+
+            # Determine position (same logic as BTC-only)
+            if top1 == 'Q1' or top2 == 'Q1':
+                if above_ema:
+                    position = 'Overweight'
+                    target_allocation = 2.0
+                else:
+                    position = 'Neutral'
+                    target_allocation = 0.0
+            else:
+                if above_ema:
+                    position = 'Underweight'
+                    target_allocation = 0.0
+                else:
+                    position = 'Short'
+                    target_allocation = -0.5
+
+            positions.loc[date] = position
+            allocations.loc[date] = target_allocation
+
+            # Store individual weights and vols
+            for ticker in ASSETS:
+                asset_weights_history[ticker].loc[date] = weights[ticker]
+                asset_allocations_history[ticker].loc[date] = target_allocation * weights[ticker]
+                vol_history[ticker].loc[date] = rolling_vol.loc[date, ticker] if date in rolling_vol.index else 0
+
+            # Rebalance if allocation or weights changed significantly
+            weights_changed = prev_weights is None or any(abs(weights[t] - prev_weights[t]) > 0.05 for t in ASSETS)
+
+            if target_allocation != prev_allocation or (target_allocation != 0 and weights_changed):
+                # Calculate current portfolio value
+                current_value = cash + sum(holdings[t] * prices[t] for t in ASSETS)
+
+                # Calculate target holdings for each asset
+                for ticker in ASSETS:
+                    target_asset_value = current_value * target_allocation * weights[ticker]
+                    holdings[ticker] = target_asset_value / prices[ticker]
+
+                cash = current_value - sum(holdings[t] * prices[t] for t in ASSETS)
+
+                regime_history.append({
+                    'date': date.strftime('%Y-%m-%d'),
+                    'position': position,
+                    'allocation': target_allocation,
+                    'weights': {ASSET_NAMES[t]: round(weights[t] * 100, 1) for t in ASSETS},
+                    'btc_price': prices['BTC-USD']
+                })
+
+                prev_allocation = target_allocation
+                prev_weights = weights.copy()
+
+            # Calculate portfolio value
+            portfolio_value.loc[date] = cash + sum(holdings[t] * prices[t] for t in ASSETS)
+            btc_buy_hold.loc[date] = buy_hold_btc * prices['BTC-USD']
+
+        # Calculate performance metrics
+        strategy_returns = portfolio_value.pct_change().dropna()
+        buyhold_returns = btc_buy_hold.pct_change().dropna()
+
+        # Strategy metrics
+        total_return = (portfolio_value.iloc[-1] / INITIAL_CAPITAL - 1) * 100
+        annual_return = ((portfolio_value.iloc[-1] / INITIAL_CAPITAL) ** (252 / len(portfolio_value)) - 1) * 100
+        volatility = strategy_returns.std() * np.sqrt(252) * 100
+        sharpe = (annual_return - 5) / volatility if volatility > 0 else 0
+
+        rolling_max = portfolio_value.cummax()
+        drawdown = (portfolio_value - rolling_max) / rolling_max
+        max_drawdown = drawdown.min() * 100
+
+        # Buy & hold metrics
+        bh_total_return = (btc_buy_hold.iloc[-1] / INITIAL_CAPITAL - 1) * 100
+        bh_annual_return = ((btc_buy_hold.iloc[-1] / INITIAL_CAPITAL) ** (252 / len(btc_buy_hold)) - 1) * 100
+        bh_volatility = buyhold_returns.std() * np.sqrt(252) * 100
+        bh_sharpe = (bh_annual_return - 5) / bh_volatility if bh_volatility > 0 else 0
+        bh_rolling_max = btc_buy_hold.cummax()
+        bh_max_drawdown = ((btc_buy_hold - bh_rolling_max) / bh_rolling_max).min() * 100
+
+        # Build chart data
+        chart_data = []
+        for date in btc_close.index:
+            chart_data.append({
+                'date': date.strftime('%Y-%m-%d'),
+                'btc_price': float(crypto_df.loc[date, 'BTC-USD']),
+                'eth_price': float(crypto_df.loc[date, 'ETH-USD']),
+                'sol_price': float(crypto_df.loc[date, 'SOL-USD']),
+                'ema': float(btc_ema.loc[date]),
+                'position': positions.loc[date],
+                'allocation': float(allocations.loc[date]),
+                'portfolio_value': float(portfolio_value.loc[date]),
+                'buyhold_value': float(btc_buy_hold.loc[date]),
+                'btc_weight': float(asset_weights_history['BTC-USD'].loc[date]),
+                'eth_weight': float(asset_weights_history['ETH-USD'].loc[date]),
+                'sol_weight': float(asset_weights_history['SOL-USD'].loc[date]),
+                'btc_alloc': float(asset_allocations_history['BTC-USD'].loc[date]),
+                'eth_alloc': float(asset_allocations_history['ETH-USD'].loc[date]),
+                'sol_alloc': float(asset_allocations_history['SOL-USD'].loc[date]),
+                'btc_vol': float(vol_history['BTC-USD'].loc[date]) * 100 if not pd.isna(vol_history['BTC-USD'].loc[date]) else 0,
+                'eth_vol': float(vol_history['ETH-USD'].loc[date]) * 100 if not pd.isna(vol_history['ETH-USD'].loc[date]) else 0,
+                'sol_vol': float(vol_history['SOL-USD'].loc[date]) * 100 if not pd.isna(vol_history['SOL-USD'].loc[date]) else 0,
+            })
+
+        # Position breakdown
+        position_counts = positions.value_counts()
+        position_pcts = {
+            'Overweight': position_counts.get('Overweight', 0) / len(positions) * 100,
+            'Neutral': position_counts.get('Neutral', 0) / len(positions) * 100,
+            'Underweight': position_counts.get('Underweight', 0) / len(positions) * 100,
+            'Short': position_counts.get('Short', 0) / len(positions) * 100,
+        }
+
+        # Current weights
+        current_weights = {
+            'BTC': asset_weights_history['BTC-USD'].iloc[-1] * 100,
+            'ETH': asset_weights_history['ETH-USD'].iloc[-1] * 100,
+            'SOL': asset_weights_history['SOL-USD'].iloc[-1] * 100,
+        }
+
+        # Current volatilities
+        current_vols = {
+            'BTC': vol_history['BTC-USD'].iloc[-1] * 100 if not pd.isna(vol_history['BTC-USD'].iloc[-1]) else 0,
+            'ETH': vol_history['ETH-USD'].iloc[-1] * 100 if not pd.isna(vol_history['ETH-USD'].iloc[-1]) else 0,
+            'SOL': vol_history['SOL-USD'].iloc[-1] * 100 if not pd.isna(vol_history['SOL-USD'].iloc[-1]) else 0,
+        }
+
+        _vol_chase_cache = {
+            'strategy': {
+                'total_return': total_return,
+                'annual_return': annual_return,
+                'sharpe': sharpe,
+                'max_drawdown': max_drawdown,
+                'volatility': volatility,
+                'final_value': portfolio_value.iloc[-1],
+            },
+            'buyhold': {
+                'total_return': bh_total_return,
+                'annual_return': bh_annual_return,
+                'sharpe': bh_sharpe,
+                'max_drawdown': bh_max_drawdown,
+                'volatility': bh_volatility,
+                'final_value': btc_buy_hold.iloc[-1],
+            },
+            'current_position': positions.iloc[-1],
+            'current_allocation': allocations.iloc[-1],
+            'current_weights': current_weights,
+            'current_vols': current_vols,
+            'position_breakdown': position_pcts,
+            'chart_data': chart_data,
+            'regime_history': regime_history[-20:],
+            'parameters': {
+                'initial_capital': INITIAL_CAPITAL,
+                'backtest_years': BACKTEST_YEARS,
+                'momentum_days': MOMENTUM_DAYS,
+                'ema_period': EMA_PERIOD,
+                'ema_smoothing': EMA_SMOOTHING,
+                'vol_lookback': VOL_LOOKBACK,
+                'assets': list(ASSET_NAMES.values()),
+            },
+            'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        }
+        _vol_chase_cache_time = datetime.now()
+
+        print(f"✓ Volatility Chase Framework complete!", flush=True)
+        print(f"  Strategy: {total_return:.1f}% return, Sharpe {sharpe:.2f}", flush=True)
+        print(f"  Current weights: BTC {current_weights['BTC']:.1f}%, ETH {current_weights['ETH']:.1f}%, SOL {current_weights['SOL']:.1f}%", flush=True)
+
+        return _vol_chase_cache
+
+    except Exception as e:
+        print(f"Error running vol chase framework: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+
+        return {
+            'error': str(e),
+            'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        }

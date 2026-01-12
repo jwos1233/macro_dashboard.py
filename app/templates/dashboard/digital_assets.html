@@ -243,6 +243,157 @@
         </div>
     </div>
     {% endif %}
+
+    <!-- Volatility Chase (High Vol = High Weight) Section -->
+    {% if vol_chase_data and not vol_chase_data.error %}
+    <div class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Volatility Chase (High Vol Weighting)</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400">BTC/ETH/SOL allocation weighted by {{ vol_chase_data.parameters.vol_lookback or 30 }}-day volatility (higher vol = higher weight)</p>
+            </div>
+        </div>
+
+        <!-- Current Weights Card -->
+        <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg shadow p-6 text-white mb-6">
+            <h3 class="text-lg font-semibold mb-4">Current Vol Chase Weights</h3>
+            <div class="grid grid-cols-3 gap-4">
+                <div class="text-center">
+                    <p class="text-3xl font-bold">{{ "%.1f"|format(vol_chase_data.current_weights.BTC or 33.3) }}%</p>
+                    <p class="text-sm opacity-80">BTC</p>
+                    <p class="text-xs opacity-60 mt-1">Vol: {{ "%.0f"|format(vol_chase_data.current_vols.BTC or 0) }}%</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-3xl font-bold">{{ "%.1f"|format(vol_chase_data.current_weights.ETH or 33.3) }}%</p>
+                    <p class="text-sm opacity-80">ETH</p>
+                    <p class="text-xs opacity-60 mt-1">Vol: {{ "%.0f"|format(vol_chase_data.current_vols.ETH or 0) }}%</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-3xl font-bold">{{ "%.1f"|format(vol_chase_data.current_weights.SOL or 33.3) }}%</p>
+                    <p class="text-sm opacity-80">SOL</p>
+                    <p class="text-xs opacity-60 mt-1">Vol: {{ "%.0f"|format(vol_chase_data.current_vols.SOL or 0) }}%</p>
+                </div>
+            </div>
+            <p class="text-xs text-center mt-4 opacity-70">Higher volatility = Higher weight (momentum/trend following style)</p>
+        </div>
+
+        <!-- Vol Chase Performance Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <p class="text-sm text-gray-500 dark:text-gray-400">Vol Chase Return</p>
+                <p class="text-2xl font-bold {% if vol_chase_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
+                    {{ "%.1f"|format(vol_chase_data.strategy.total_return or 0) }}%
+                </p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <p class="text-sm text-gray-500 dark:text-gray-400">Inverse Vol Return</p>
+                <p class="text-2xl font-bold {% if vol_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">
+                    {{ "%.1f"|format(vol_data.strategy.total_return or 0) }}%
+                </p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <p class="text-sm text-gray-500 dark:text-gray-400">Vol Chase Sharpe</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ "%.2f"|format(vol_chase_data.strategy.sharpe or 0) }}</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <p class="text-sm text-gray-500 dark:text-gray-400">Vol Chase Max DD</p>
+                <p class="text-xl font-bold text-warning">{{ "%.1f"|format(vol_chase_data.strategy.max_drawdown or 0) }}%</p>
+            </div>
+        </div>
+
+        <!-- Vol Chase Weight History Chart -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Vol Chase Weight History</h3>
+            <div class="h-64">
+                <canvas id="volChaseWeightChart"></canvas>
+            </div>
+        </div>
+    </div>
+    {% elif vol_chase_data and vol_chase_data.error %}
+    <div class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <p class="text-red-800 dark:text-red-200">Error running vol chase backtest: {{ vol_chase_data.error }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Strategy Comparison Equity Curves -->
+    {% if vol_data and not vol_data.error and vol_chase_data and not vol_chase_data.error %}
+    <div class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Strategy Comparison</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Equity curves comparing Inverse Vol vs Vol Chase vs BTC Buy & Hold</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Inverse Vol vs Buy & Hold -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Inverse Vol Strategy vs Buy & Hold</h3>
+                <div class="h-64">
+                    <canvas id="invVolEquityChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Vol Chase vs Buy & Hold -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Vol Chase Strategy vs Buy & Hold</h3>
+                <div class="h-64">
+                    <canvas id="volChaseEquityChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Comparison Table -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Performance Summary</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                            <th class="text-left py-2 text-gray-600 dark:text-gray-400">Strategy</th>
+                            <th class="text-right py-2 text-gray-600 dark:text-gray-400">Return</th>
+                            <th class="text-right py-2 text-gray-600 dark:text-gray-400">Sharpe</th>
+                            <th class="text-right py-2 text-gray-600 dark:text-gray-400">Max DD</th>
+                            <th class="text-right py-2 text-gray-600 dark:text-gray-400">Volatility</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-gray-100 dark:border-gray-700">
+                            <td class="py-2 font-medium text-gray-900 dark:text-white">BTC-Only</td>
+                            <td class="text-right py-2 {% if btc_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">{{ "%.1f"|format(btc_data.strategy.total_return or 0) }}%</td>
+                            <td class="text-right py-2 text-gray-700 dark:text-gray-300">{{ "%.2f"|format(btc_data.strategy.sharpe or 0) }}</td>
+                            <td class="text-right py-2 text-warning">{{ "%.1f"|format(btc_data.strategy.max_drawdown or 0) }}%</td>
+                            <td class="text-right py-2 text-gray-700 dark:text-gray-300">{{ "%.1f"|format(btc_data.strategy.volatility or 0) }}%</td>
+                        </tr>
+                        <tr class="border-b border-gray-100 dark:border-gray-700">
+                            <td class="py-2 font-medium text-gray-900 dark:text-white">Inverse Vol (Low Vol = High Weight)</td>
+                            <td class="text-right py-2 {% if vol_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">{{ "%.1f"|format(vol_data.strategy.total_return or 0) }}%</td>
+                            <td class="text-right py-2 text-gray-700 dark:text-gray-300">{{ "%.2f"|format(vol_data.strategy.sharpe or 0) }}</td>
+                            <td class="text-right py-2 text-warning">{{ "%.1f"|format(vol_data.strategy.max_drawdown or 0) }}%</td>
+                            <td class="text-right py-2 text-gray-700 dark:text-gray-300">{{ "%.1f"|format(vol_data.strategy.volatility or 0) }}%</td>
+                        </tr>
+                        <tr class="border-b border-gray-100 dark:border-gray-700">
+                            <td class="py-2 font-medium text-gray-900 dark:text-white">Vol Chase (High Vol = High Weight)</td>
+                            <td class="text-right py-2 {% if vol_chase_data.strategy.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">{{ "%.1f"|format(vol_chase_data.strategy.total_return or 0) }}%</td>
+                            <td class="text-right py-2 text-gray-700 dark:text-gray-300">{{ "%.2f"|format(vol_chase_data.strategy.sharpe or 0) }}</td>
+                            <td class="text-right py-2 text-warning">{{ "%.1f"|format(vol_chase_data.strategy.max_drawdown or 0) }}%</td>
+                            <td class="text-right py-2 text-gray-700 dark:text-gray-300">{{ "%.1f"|format(vol_chase_data.strategy.volatility or 0) }}%</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 font-medium text-gray-500 dark:text-gray-400">BTC Buy & Hold</td>
+                            <td class="text-right py-2 {% if btc_data.buyhold.total_return >= 0 %}text-success{% else %}text-warning{% endif %}">{{ "%.1f"|format(btc_data.buyhold.total_return or 0) }}%</td>
+                            <td class="text-right py-2 text-gray-500 dark:text-gray-400">{{ "%.2f"|format(btc_data.buyhold.sharpe or 0) }}</td>
+                            <td class="text-right py-2 text-warning">{{ "%.1f"|format(btc_data.buyhold.max_drawdown or 0) }}%</td>
+                            <td class="text-right py-2 text-gray-500 dark:text-gray-400">{{ "%.1f"|format(btc_data.buyhold.volatility or 0) }}%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <script>
@@ -771,6 +922,227 @@ document.addEventListener('DOMContentLoaded', function() {
                 y: {
                     ticks: {
                         callback: function(value) { return value + '%'; },
+                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
+                    },
+                    grid: { color: document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // Vol Chase Charts
+    {% if vol_chase_data and not vol_chase_data.error and vol_chase_data.chart_data %}
+    const volChaseChartData = {{ vol_chase_data.chart_data | tojson }};
+    const sampledVolChaseData = volChaseChartData.filter((d, i) => i % 5 === 0 || i === volChaseChartData.length - 1);
+
+    // Vol Chase Weight History Chart
+    const volChaseWeightCtx = document.getElementById('volChaseWeightChart').getContext('2d');
+    new Chart(volChaseWeightCtx, {
+        type: 'line',
+        data: {
+            labels: sampledVolChaseData.map(d => d.date),
+            datasets: [
+                {
+                    label: 'BTC Weight',
+                    data: sampledVolChaseData.map(d => d.btc_weight * 100),
+                    borderColor: '#F7931A',
+                    backgroundColor: 'rgba(247, 147, 26, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    pointRadius: 0,
+                    tension: 0.3
+                },
+                {
+                    label: 'ETH Weight',
+                    data: sampledVolChaseData.map(d => d.eth_weight * 100),
+                    borderColor: '#627EEA',
+                    backgroundColor: 'rgba(98, 126, 234, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    pointRadius: 0,
+                    tension: 0.3
+                },
+                {
+                    label: 'SOL Weight',
+                    data: sampledVolChaseData.map(d => d.sol_weight * 100),
+                    borderColor: '#00FFA3',
+                    backgroundColor: 'rgba(0, 255, 163, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    pointRadius: 0,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { color: document.documentElement.classList.contains('dark') ? '#fff' : '#374151' }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'category',
+                    ticks: { maxTicksLimit: 10, color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280' },
+                    grid: { display: false }
+                },
+                y: {
+                    min: 0,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) { return value + '%'; },
+                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
+                    },
+                    grid: { color: document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // Equity Curve Comparison Charts
+    {% if vol_data and not vol_data.error and vol_data.chart_data and vol_chase_data and not vol_chase_data.error and vol_chase_data.chart_data %}
+    const invVolData = {{ vol_data.chart_data | tojson }};
+    const volChaseData = {{ vol_chase_data.chart_data | tojson }};
+
+    // Sample for equity charts
+    const sampledInvVol = invVolData.filter((d, i) => i % 5 === 0 || i === invVolData.length - 1);
+    const sampledVolChase = volChaseData.filter((d, i) => i % 5 === 0 || i === volChaseData.length - 1);
+
+    // Normalize to start at 10000
+    const invVolStart = sampledInvVol[0].portfolio_value;
+    const invVolBhStart = sampledInvVol[0].buyhold_value;
+    const volChaseStart = sampledVolChase[0].portfolio_value;
+    const volChaseBhStart = sampledVolChase[0].buyhold_value;
+
+    // Inverse Vol vs Buy & Hold Chart
+    const invVolEquityCtx = document.getElementById('invVolEquityChart').getContext('2d');
+    new Chart(invVolEquityCtx, {
+        type: 'line',
+        data: {
+            labels: sampledInvVol.map(d => d.date),
+            datasets: [
+                {
+                    label: 'Inverse Vol Strategy',
+                    data: sampledInvVol.map(d => (d.portfolio_value / invVolStart) * 10000),
+                    borderColor: '#F59E0B',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.1
+                },
+                {
+                    label: 'BTC Buy & Hold',
+                    data: sampledInvVol.map(d => (d.buyhold_value / invVolBhStart) * 10000),
+                    borderColor: '#6B7280',
+                    backgroundColor: 'transparent',
+                    borderWidth: 1.5,
+                    pointRadius: 0,
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { color: document.documentElement.classList.contains('dark') ? '#fff' : '#374151' }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': $' + context.parsed.y.toLocaleString(undefined, {maximumFractionDigits: 0});
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'category',
+                    ticks: { maxTicksLimit: 8, color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280' },
+                    grid: { display: false }
+                },
+                y: {
+                    type: 'logarithmic',
+                    ticks: {
+                        callback: function(value) { return '$' + value.toLocaleString(); },
+                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
+                    },
+                    grid: { color: document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }
+                }
+            }
+        }
+    });
+
+    // Vol Chase vs Buy & Hold Chart
+    const volChaseEquityCtx = document.getElementById('volChaseEquityChart').getContext('2d');
+    new Chart(volChaseEquityCtx, {
+        type: 'line',
+        data: {
+            labels: sampledVolChase.map(d => d.date),
+            datasets: [
+                {
+                    label: 'Vol Chase Strategy',
+                    data: sampledVolChase.map(d => (d.portfolio_value / volChaseStart) * 10000),
+                    borderColor: '#A855F7',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.1
+                },
+                {
+                    label: 'BTC Buy & Hold',
+                    data: sampledVolChase.map(d => (d.buyhold_value / volChaseBhStart) * 10000),
+                    borderColor: '#6B7280',
+                    backgroundColor: 'transparent',
+                    borderWidth: 1.5,
+                    pointRadius: 0,
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { color: document.documentElement.classList.contains('dark') ? '#fff' : '#374151' }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': $' + context.parsed.y.toLocaleString(undefined, {maximumFractionDigits: 0});
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'category',
+                    ticks: { maxTicksLimit: 8, color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280' },
+                    grid: { display: false }
+                },
+                y: {
+                    type: 'logarithmic',
+                    ticks: {
+                        callback: function(value) { return '$' + value.toLocaleString(); },
                         color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
                     },
                     grid: { color: document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }

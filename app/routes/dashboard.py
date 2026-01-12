@@ -434,15 +434,18 @@ async def performance_page(request: Request):
 @router.get("/dashboard/digital-assets")
 async def digital_assets_page(request: Request):
     """Digital Assets Framework - BTC allocation based on quad regime"""
-    from app.data import run_btc_framework_backtest, run_volatility_weighted_backtest
+    from app.data import run_btc_framework_backtest, run_volatility_weighted_backtest, run_volatility_chase_backtest
 
     signals = get_signals()
 
     # Run BTC framework backtest
     btc_data = run_btc_framework_backtest()
 
-    # Run multi-asset volatility weighted backtest
+    # Run multi-asset inverse volatility weighted backtest (low vol = high weight)
     vol_data = run_volatility_weighted_backtest()
+
+    # Run multi-asset volatility chase backtest (high vol = high weight)
+    vol_chase_data = run_volatility_chase_backtest()
 
     return templates.TemplateResponse("dashboard/digital_assets.html", {
         "request": request,
@@ -450,5 +453,6 @@ async def digital_assets_page(request: Request):
         "signals": signals,
         "btc_data": btc_data,
         "vol_data": vol_data,
+        "vol_chase_data": vol_chase_data,
         "quad_descriptions": QUADRANT_DESCRIPTIONS,
     })
