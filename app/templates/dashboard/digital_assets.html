@@ -191,10 +191,10 @@
                 </thead>
                 <tbody>
                     {% for item in hurst_comparison.comparison %}
-                    <tr class="border-b border-gray-100 dark:border-gray-700 {% if item.name == 'hurst_100' %}bg-navy/10 dark:bg-navy/20{% endif %}">
+                    <tr class="border-b border-gray-100 dark:border-gray-700 {% if item.name == 'hurst_50' %}bg-navy/10 dark:bg-navy/20{% endif %}">
                         <td class="py-2 px-3 font-medium text-gray-900 dark:text-white">
                             {{ item.label }}
-                            {% if item.name == 'hurst_100' %}<span class="text-xs text-navy ml-1">(active)</span>{% endif %}
+                            {% if item.name == 'hurst_50' %}<span class="text-xs text-navy ml-1">(active)</span>{% endif %}
                         </td>
                         <td class="text-right py-2 px-3 {% if item.total_return >= 0 %}text-success{% else %}text-warning{% endif %} font-semibold">
                             {{ "%.1f"|format(item.total_return) }}%
@@ -218,7 +218,7 @@
         </div>
         <p class="text-xs text-gray-400 mt-3">
             Trending % = percentage of time Hurst > EMA(Hurst). Lower % means filter is more selective.
-            Active strategy uses 100-day Hurst lookback with 20-day EMA.
+            Active strategy uses 50-day Hurst lookback with 20-day EMA.
         </p>
     </div>
     {% endif %}

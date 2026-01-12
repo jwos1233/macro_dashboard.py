@@ -441,8 +441,8 @@ async def digital_assets_page(request: Request):
     # Run Hurst comparison backtest (includes baseline and different Hurst lookbacks)
     hurst_comparison = run_hurst_comparison_backtest()
 
-    # Use the 100-day Hurst as the primary BTC data (or baseline if no hurst results)
-    btc_data = hurst_comparison.get('results', {}).get('hurst_100') or hurst_comparison.get('results', {}).get('baseline') or run_btc_framework_backtest()
+    # Use the 50-day Hurst as the primary BTC data (best performing filter)
+    btc_data = hurst_comparison.get('results', {}).get('hurst_50') or hurst_comparison.get('results', {}).get('baseline') or run_btc_framework_backtest()
 
     # Run multi-asset inverse volatility weighted backtest (low vol = high weight)
     vol_data = run_volatility_weighted_backtest()
