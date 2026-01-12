@@ -1187,7 +1187,7 @@ def run_volatility_weighted_backtest() -> dict:
                     target_allocation = 0.0
                 else:
                     position = 'Short'
-                    target_allocation = -0.5
+                    target_allocation = -1.0
 
             positions.loc[date] = position
             allocations.loc[date] = target_allocation
@@ -1539,7 +1539,7 @@ def run_volatility_chase_backtest() -> dict:
                     target_allocation = 0.0
                 else:
                     position = 'Short'
-                    target_allocation = -0.5
+                    target_allocation = -1.0
 
             positions.loc[date] = position
             allocations.loc[date] = target_allocation
