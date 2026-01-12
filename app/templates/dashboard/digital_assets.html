@@ -54,9 +54,10 @@
             <div class="text-right">
                 <p class="text-sm text-gray-300">BTC Price</p>
                 {% set last_price = btc_data.chart_data[-1].btc_price if btc_data.chart_data else 0 %}
-                {% set last_ema = btc_data.chart_data[-1].ema if btc_data.chart_data else 0 %}
+                {% set last_ema_short = btc_data.chart_data[-1].ema_short if btc_data.chart_data and btc_data.chart_data[-1].ema_short else 0 %}
+                {% set last_ema_long = btc_data.chart_data[-1].ema_long if btc_data.chart_data and btc_data.chart_data[-1].ema_long else 0 %}
                 <p class="text-3xl font-bold">${{ "{:,.0f}".format(last_price) }}</p>
-                <p class="text-sm text-gray-300 mt-2">EMA ({{ btc_data.parameters.ema_period or 50 }}d): ${{ "{:,.0f}".format(last_ema) }}</p>
+                <p class="text-sm text-gray-300 mt-2">EMA 20d: ${{ "{:,.0f}".format(last_ema_short) }} | 50d: ${{ "{:,.0f}".format(last_ema_long) }}</p>
             </div>
         </div>
     </div>

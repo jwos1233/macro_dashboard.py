@@ -807,19 +807,23 @@ def run_btc_framework_backtest() -> dict:
         # Apply EMA smoothing to quad scores
         smoothed_scores = quad_scores.ewm(span=EMA_SMOOTHING, adjust=False).mean()
 
-        # Calculate BTC EMA for trend filter
-        btc_ema = btc_close.ewm(span=EMA_PERIOD, adjust=False).mean()
+        # Calculate dual EMA for trend filter (20 + 50 day)
+        EMA_SHORT = 20
+        btc_ema_short = btc_close.ewm(span=EMA_SHORT, adjust=False).mean()
+        btc_ema_long = btc_close.ewm(span=EMA_PERIOD, adjust=False).mean()
 
         # Align all data
-        common_dates = btc_close.index.intersection(smoothed_scores.index).intersection(btc_ema.index)
+        common_dates = btc_close.index.intersection(smoothed_scores.index).intersection(btc_ema_short.index).intersection(btc_ema_long.index)
         btc_close = btc_close.loc[common_dates]
-        btc_ema = btc_ema.loc[common_dates]
+        btc_ema_short = btc_ema_short.loc[common_dates]
+        btc_ema_long = btc_ema_long.loc[common_dates]
         smoothed_scores = smoothed_scores.loc[common_dates]
 
         # Warmup period
         warmup = max(MOMENTUM_DAYS, EMA_PERIOD, EMA_SMOOTHING) + 10
         btc_close = btc_close.iloc[warmup:]
-        btc_ema = btc_ema.iloc[warmup:]
+        btc_ema_short = btc_ema_short.iloc[warmup:]
+        btc_ema_long = btc_ema_long.iloc[warmup:]
         smoothed_scores = smoothed_scores.iloc[warmup:]
 
         print(f"Running strategy simulation...", flush=True)
@@ -839,12 +843,14 @@ def run_btc_framework_backtest() -> dict:
 
         for i, date in enumerate(btc_close.index):
             btc_price = btc_close.loc[date]
-            ema_value = btc_ema.loc[date]
+            ema_short = btc_ema_short.loc[date]
+            ema_long = btc_ema_long.loc[date]
             scores = smoothed_scores.loc[date].sort_values(ascending=False)
 
             top1 = scores.index[0]
             top2 = scores.index[1]
-            above_ema = btc_price > ema_value
+            # Dual EMA filter: price must be above BOTH 20 and 50 day EMA
+            above_ema = (btc_price > ema_short) and (btc_price > ema_long)
 
             # Determine position from quad framework
             if top1 == 'Q1':
@@ -929,7 +935,9 @@ def run_btc_framework_backtest() -> dict:
             chart_data.append({
                 'date': date.strftime('%Y-%m-%d'),
                 'btc_price': float(btc_close.loc[date]),
-                'ema': float(btc_ema.loc[date]),
+                'ema': float(btc_ema_long.loc[date]),  # 50-day for chart
+                'ema_short': float(btc_ema_short.loc[date]),  # 20-day
+                'ema_long': float(btc_ema_long.loc[date]),  # 50-day
                 'position': positions.loc[date],
                 'allocation': float(allocations.loc[date]),
                 'portfolio_value': float(portfolio_value.loc[date]),
