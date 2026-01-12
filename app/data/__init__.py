@@ -948,8 +948,8 @@ def run_btc_framework_backtest(hurst_lookback=100, hurst_ema=20, use_hurst_filte
             top2 = scores.index[1]
             above_ema = btc_price > ema_value
 
-            # Hurst filter: trending if Hurst > EMA(Hurst)
-            is_trending = hurst_val > hurst_ema_val if not pd.isna(hurst_val) and not pd.isna(hurst_ema_val) else True
+            # Hurst filter: trending if Hurst > 0.5 (fixed threshold)
+            is_trending = hurst_val > 0.5 if not pd.isna(hurst_val) else True
             hurst_signals.loc[date] = 'Trending' if is_trending else 'Choppy'
 
             # Determine base position from quad framework
