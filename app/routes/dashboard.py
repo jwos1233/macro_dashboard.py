@@ -434,12 +434,15 @@ async def performance_page(request: Request):
 @router.get("/dashboard/digital-assets")
 async def digital_assets_page(request: Request):
     """Digital Assets Framework - BTC allocation based on quad regime"""
-    from app.data import run_btc_framework_backtest, run_volatility_weighted_backtest, run_volatility_chase_backtest
+    from app.data import run_btc_framework_backtest, run_volatility_weighted_backtest, run_volatility_chase_backtest, run_hurst_comparison_backtest
 
     signals = get_signals()
 
-    # Run BTC framework backtest
-    btc_data = run_btc_framework_backtest()
+    # Run Hurst comparison backtest (includes baseline and different Hurst lookbacks)
+    hurst_comparison = run_hurst_comparison_backtest()
+
+    # Use the 100-day Hurst as the primary BTC data (or baseline if no hurst results)
+    btc_data = hurst_comparison.get('results', {}).get('hurst_100') or hurst_comparison.get('results', {}).get('baseline') or run_btc_framework_backtest()
 
     # Run multi-asset inverse volatility weighted backtest (low vol = high weight)
     vol_data = run_volatility_weighted_backtest()
@@ -454,5 +457,6 @@ async def digital_assets_page(request: Request):
         "btc_data": btc_data,
         "vol_data": vol_data,
         "vol_chase_data": vol_chase_data,
+        "hurst_comparison": hurst_comparison,
         "quad_descriptions": QUADRANT_DESCRIPTIONS,
     })
