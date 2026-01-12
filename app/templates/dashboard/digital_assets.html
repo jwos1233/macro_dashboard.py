@@ -219,29 +219,20 @@
         <div class="flex justify-between items-center mb-6">
             <div>
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white">Multi-Asset Inverse Volatility</h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400">BTC/ETH/SOL allocation weighted by inverse {{ vol_data.parameters.vol_lookback or 30 }}-day volatility</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Top 10 crypto allocation weighted by inverse {{ vol_data.parameters.vol_lookback or 30 }}-day volatility</p>
             </div>
         </div>
 
         <!-- Current Weights Card -->
         <div class="bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg shadow p-6 text-white mb-6">
-            <h3 class="text-lg font-semibold mb-4">Current Inverse Vol Weights</h3>
-            <div class="grid grid-cols-3 gap-4">
+            <h3 class="text-lg font-semibold mb-4">Current Inverse Vol Weights (Top 10 by MCap)</h3>
+            <div class="grid grid-cols-5 md:grid-cols-10 gap-2">
+                {% for asset in ['BTC', 'ETH', 'XRP', 'BNB', 'SOL', 'TRX', 'DOGE', 'ADA', 'BCH', 'LINK'] %}
                 <div class="text-center">
-                    <p class="text-3xl font-bold">{{ "%.1f"|format(vol_data.current_weights.BTC or 33.3) }}%</p>
-                    <p class="text-sm opacity-80">BTC</p>
-                    <p class="text-xs opacity-60 mt-1">Vol: {{ "%.0f"|format(vol_data.current_vols.BTC or 0) }}%</p>
+                    <p class="text-lg md:text-xl font-bold">{{ "%.0f"|format(vol_data.current_weights[asset] or 10) }}%</p>
+                    <p class="text-xs opacity-80">{{ asset }}</p>
                 </div>
-                <div class="text-center">
-                    <p class="text-3xl font-bold">{{ "%.1f"|format(vol_data.current_weights.ETH or 33.3) }}%</p>
-                    <p class="text-sm opacity-80">ETH</p>
-                    <p class="text-xs opacity-60 mt-1">Vol: {{ "%.0f"|format(vol_data.current_vols.ETH or 0) }}%</p>
-                </div>
-                <div class="text-center">
-                    <p class="text-3xl font-bold">{{ "%.1f"|format(vol_data.current_weights.SOL or 33.3) }}%</p>
-                    <p class="text-sm opacity-80">SOL</p>
-                    <p class="text-xs opacity-60 mt-1">Vol: {{ "%.0f"|format(vol_data.current_vols.SOL or 0) }}%</p>
-                </div>
+                {% endfor %}
             </div>
             <p class="text-xs text-center mt-4 opacity-70">Lower volatility = Higher weight (risk parity style)</p>
         </div>
@@ -300,29 +291,20 @@
         <div class="flex justify-between items-center mb-6">
             <div>
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white">Volatility Chase (High Vol Weighting)</h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400">BTC/ETH/SOL allocation weighted by {{ vol_chase_data.parameters.vol_lookback or 30 }}-day volatility (higher vol = higher weight)</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Top 10 crypto allocation weighted by {{ vol_chase_data.parameters.vol_lookback or 30 }}-day volatility (higher vol = higher weight)</p>
             </div>
         </div>
 
         <!-- Current Weights Card -->
         <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg shadow p-6 text-white mb-6">
-            <h3 class="text-lg font-semibold mb-4">Current Vol Chase Weights</h3>
-            <div class="grid grid-cols-3 gap-4">
+            <h3 class="text-lg font-semibold mb-4">Current Vol Chase Weights (Top 10 by MCap)</h3>
+            <div class="grid grid-cols-5 md:grid-cols-10 gap-2">
+                {% for asset in ['BTC', 'ETH', 'XRP', 'BNB', 'SOL', 'TRX', 'DOGE', 'ADA', 'BCH', 'LINK'] %}
                 <div class="text-center">
-                    <p class="text-3xl font-bold">{{ "%.1f"|format(vol_chase_data.current_weights.BTC or 33.3) }}%</p>
-                    <p class="text-sm opacity-80">BTC</p>
-                    <p class="text-xs opacity-60 mt-1">Vol: {{ "%.0f"|format(vol_chase_data.current_vols.BTC or 0) }}%</p>
+                    <p class="text-lg md:text-xl font-bold">{{ "%.0f"|format(vol_chase_data.current_weights[asset] or 10) }}%</p>
+                    <p class="text-xs opacity-80">{{ asset }}</p>
                 </div>
-                <div class="text-center">
-                    <p class="text-3xl font-bold">{{ "%.1f"|format(vol_chase_data.current_weights.ETH or 33.3) }}%</p>
-                    <p class="text-sm opacity-80">ETH</p>
-                    <p class="text-xs opacity-60 mt-1">Vol: {{ "%.0f"|format(vol_chase_data.current_vols.ETH or 0) }}%</p>
-                </div>
-                <div class="text-center">
-                    <p class="text-3xl font-bold">{{ "%.1f"|format(vol_chase_data.current_weights.SOL or 33.3) }}%</p>
-                    <p class="text-sm opacity-80">SOL</p>
-                    <p class="text-xs opacity-60 mt-1">Vol: {{ "%.0f"|format(vol_chase_data.current_vols.SOL or 0) }}%</p>
-                </div>
+                {% endfor %}
             </div>
             <p class="text-xs text-center mt-4 opacity-70">Higher volatility = Higher weight (momentum/trend following style)</p>
         </div>
