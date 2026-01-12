@@ -723,111 +723,27 @@ def run_ema_window_comparison() -> dict:
         }
 
 
-# Hurst exponent calculation
-def calculate_hurst_exponent(prices, window=100):
+# Cache for BTC digital assets framework
+_btc_framework_cache = None
+_btc_framework_cache_time = None
+
+
+def run_btc_framework_backtest() -> dict:
     """
-    Calculate Hurst exponent using Rescaled Range (R/S) analysis.
-
-    H > 0.5: Trending (persistent)
-    H = 0.5: Random walk
-    H < 0.5: Mean-reverting (anti-persistent)
-
-    Returns a Series of rolling Hurst values.
-    """
-    import numpy as np
-    import pandas as pd
-
-    log_returns = np.log(prices / prices.shift(1)).dropna()
-
-    hurst_values = pd.Series(index=prices.index, dtype=float)
-
-    for i in range(window, len(log_returns)):
-        # Get the window of returns
-        returns_window = log_returns.iloc[i-window:i].values
-
-        # Use multiple sub-period sizes to estimate H
-        n_values = []
-        rs_values = []
-
-        for n in [int(window/8), int(window/4), int(window/2), window]:
-            if n < 8:
-                continue
-
-            # Number of sub-periods
-            num_periods = len(returns_window) // n
-            if num_periods < 1:
-                continue
-
-            rs_list = []
-            for j in range(num_periods):
-                sub_returns = returns_window[j*n:(j+1)*n]
-
-                # Mean of sub-period
-                mean_ret = np.mean(sub_returns)
-
-                # Cumulative deviation from mean
-                cum_dev = np.cumsum(sub_returns - mean_ret)
-
-                # Range
-                R = np.max(cum_dev) - np.min(cum_dev)
-
-                # Standard deviation
-                S = np.std(sub_returns, ddof=1)
-
-                if S > 0:
-                    rs_list.append(R / S)
-
-            if len(rs_list) > 0:
-                n_values.append(n)
-                rs_values.append(np.mean(rs_list))
-
-        # Calculate Hurst exponent as slope of log(R/S) vs log(n)
-        if len(n_values) >= 2:
-            log_n = np.log(n_values)
-            log_rs = np.log(rs_values)
-
-            # Simple linear regression
-            slope = np.polyfit(log_n, log_rs, 1)[0]
-            hurst_values.iloc[i] = slope
-        else:
-            hurst_values.iloc[i] = 0.5  # Default to random walk
-
-    return hurst_values
-
-
-# Cache for BTC digital assets framework (keyed by parameters)
-_btc_framework_cache = {}
-_btc_framework_cache_time = {}
-
-
-def run_btc_framework_backtest(hurst_lookback=100, hurst_ema=20, use_hurst_filter=True) -> dict:
-    """
-    Run BTC-only backtest based on quad framework with optional Hurst filter.
+    Run BTC-only backtest based on quad framework.
 
     Allocation rules:
     - Q1 in top 2 + above EMA → 200% (Overweight)
     - Otherwise (except short) → 0% (Neutral)
     - Q1 not in top 2 + below EMA → -25% (Short)
-
-    Hurst filter (when enabled):
-    - Only take positions when Hurst > EMA(Hurst), indicating trending conditions
-    - Go to Neutral when Hurst <= EMA(Hurst), indicating choppy/mean-reverting conditions
-
-    Args:
-        hurst_lookback: Window for Hurst calculation (default 100)
-        hurst_ema: EMA period for Hurst smoothing (default 20)
-        use_hurst_filter: Whether to apply the Hurst filter (default True)
     """
     global _btc_framework_cache, _btc_framework_cache_time
 
-    # Cache key based on parameters
-    cache_key = f"{hurst_lookback}_{hurst_ema}_{use_hurst_filter}"
-
     # Check cache
-    if cache_key in _btc_framework_cache and cache_key in _btc_framework_cache_time:
-        cache_age = datetime.now() - _btc_framework_cache_time[cache_key]
+    if _btc_framework_cache is not None and _btc_framework_cache_time is not None:
+        cache_age = datetime.now() - _btc_framework_cache_time
         if cache_age < timedelta(hours=CACHE_DURATION_HOURS):
-            return _btc_framework_cache[cache_key]
+            return _btc_framework_cache
 
     try:
         print("=" * 60, flush=True)
@@ -891,29 +807,24 @@ def run_btc_framework_backtest(hurst_lookback=100, hurst_ema=20, use_hurst_filte
         # Apply EMA smoothing to quad scores
         smoothed_scores = quad_scores.ewm(span=EMA_SMOOTHING, adjust=False).mean()
 
-        # Calculate BTC EMA for trend filter
-        btc_ema = btc_close.ewm(span=EMA_PERIOD, adjust=False).mean()
-
-        # Calculate Hurst exponent and its EMA for trend strength filter
-        print(f"Calculating Hurst exponent (lookback={hurst_lookback}, ema={hurst_ema})...", flush=True)
-        hurst = calculate_hurst_exponent(btc_close, window=hurst_lookback)
-        hurst_ema_values = hurst.ewm(span=hurst_ema, adjust=False).mean()
+        # Calculate dual EMA for trend filter (20 + 50 day)
+        EMA_SHORT = 20
+        btc_ema_short = btc_close.ewm(span=EMA_SHORT, adjust=False).mean()
+        btc_ema_long = btc_close.ewm(span=EMA_PERIOD, adjust=False).mean()
 
         # Align all data
-        common_dates = btc_close.index.intersection(smoothed_scores.index).intersection(btc_ema.index).intersection(hurst.dropna().index)
+        common_dates = btc_close.index.intersection(smoothed_scores.index).intersection(btc_ema_short.index).intersection(btc_ema_long.index)
         btc_close = btc_close.loc[common_dates]
-        btc_ema = btc_ema.loc[common_dates]
+        btc_ema_short = btc_ema_short.loc[common_dates]
+        btc_ema_long = btc_ema_long.loc[common_dates]
         smoothed_scores = smoothed_scores.loc[common_dates]
-        hurst = hurst.loc[common_dates]
-        hurst_ema_values = hurst_ema_values.loc[common_dates]
 
-        # Warmup period (increased for Hurst calculation)
-        warmup = max(MOMENTUM_DAYS, EMA_PERIOD, EMA_SMOOTHING, hurst_lookback) + 10
+        # Warmup period
+        warmup = max(MOMENTUM_DAYS, EMA_PERIOD, EMA_SMOOTHING) + 10
         btc_close = btc_close.iloc[warmup:]
-        btc_ema = btc_ema.iloc[warmup:]
+        btc_ema_short = btc_ema_short.iloc[warmup:]
+        btc_ema_long = btc_ema_long.iloc[warmup:]
         smoothed_scores = smoothed_scores.iloc[warmup:]
-        hurst = hurst.iloc[warmup:]
-        hurst_ema_values = hurst_ema_values.iloc[warmup:]
 
         print(f"Running strategy simulation...", flush=True)
 
@@ -922,9 +833,6 @@ def run_btc_framework_backtest(hurst_lookback=100, hurst_ema=20, use_hurst_filte
         btc_buy_hold = pd.Series(index=btc_close.index, dtype=float)
         positions = pd.Series(index=btc_close.index, dtype=str)
         allocations = pd.Series(index=btc_close.index, dtype=float)
-        hurst_values_series = pd.Series(index=btc_close.index, dtype=float)
-        hurst_ema_series = pd.Series(index=btc_close.index, dtype=float)
-        hurst_signals = pd.Series(index=btc_close.index, dtype=str)  # 'Trending' or 'Choppy'
 
         cash = INITIAL_CAPITAL
         btc_holdings = 0
@@ -935,62 +843,38 @@ def run_btc_framework_backtest(hurst_lookback=100, hurst_ema=20, use_hurst_filte
 
         for i, date in enumerate(btc_close.index):
             btc_price = btc_close.loc[date]
-            ema_value = btc_ema.loc[date]
+            ema_short = btc_ema_short.loc[date]
+            ema_long = btc_ema_long.loc[date]
             scores = smoothed_scores.loc[date].sort_values(ascending=False)
-            hurst_val = hurst.loc[date]
-            hurst_ema_val = hurst_ema_values.loc[date]
-
-            # Store Hurst values for chart
-            hurst_values_series.loc[date] = hurst_val
-            hurst_ema_series.loc[date] = hurst_ema_val
 
             top1 = scores.index[0]
             top2 = scores.index[1]
-            above_ema = btc_price > ema_value
+            # Dual EMA filter: price must be above BOTH 20 and 50 day EMA
+            above_ema = (btc_price > ema_short) and (btc_price > ema_long)
 
-            # Hurst filter: trending if Hurst > 0.5 (fixed threshold)
-            is_trending = hurst_val > 0.5 if not pd.isna(hurst_val) else True
-            hurst_signals.loc[date] = 'Trending' if is_trending else 'Choppy'
-
-            # Determine base position from quad framework
+            # Determine position from quad framework
             if top1 == 'Q1':
                 if above_ema:
-                    base_position = 'Overweight'
-                    base_allocation = 2.0  # 200%
+                    position = 'Overweight'
+                    target_allocation = 2.0  # 200%
                 else:
-                    base_position = 'Neutral'
-                    base_allocation = 0.0
+                    position = 'Neutral'
+                    target_allocation = 0.0
             elif top2 == 'Q1':
                 if above_ema:
-                    base_position = 'Overweight'
-                    base_allocation = 2.0  # 200%
+                    position = 'Overweight'
+                    target_allocation = 2.0  # 200%
                 else:
-                    base_position = 'Neutral'
-                    base_allocation = 0.0
+                    position = 'Neutral'
+                    target_allocation = 0.0
             else:
                 # Q1 not in top 2
                 if above_ema:
-                    base_position = 'Neutral'
-                    base_allocation = 0.0
-                else:
-                    base_position = 'Short'
-                    base_allocation = -0.25  # -25% (short)
-
-            # Apply Hurst filter if enabled - only on NEW entries
-            # Hurst filter should not force exits from existing positions
-            if use_hurst_filter and not is_trending:
-                # Only block new entries (going from Neutral to Overweight/Short)
-                if prev_allocation == 0 and base_allocation != 0:
-                    # Trying to enter a new position in choppy conditions - block it
                     position = 'Neutral'
                     target_allocation = 0.0
                 else:
-                    # Already in a position or exiting - let it through
-                    position = base_position
-                    target_allocation = base_allocation
-            else:
-                position = base_position
-                target_allocation = base_allocation
+                    position = 'Short'
+                    target_allocation = -0.25  # -25% (short)
 
             positions.loc[date] = position
             allocations.loc[date] = target_allocation
@@ -1051,14 +935,13 @@ def run_btc_framework_backtest(hurst_lookback=100, hurst_ema=20, use_hurst_filte
             chart_data.append({
                 'date': date.strftime('%Y-%m-%d'),
                 'btc_price': float(btc_close.loc[date]),
-                'ema': float(btc_ema.loc[date]),
+                'ema': float(btc_ema_long.loc[date]),  # 50-day for chart
+                'ema_short': float(btc_ema_short.loc[date]),  # 20-day
+                'ema_long': float(btc_ema_long.loc[date]),  # 50-day
                 'position': positions.loc[date],
                 'allocation': float(allocations.loc[date]),
                 'portfolio_value': float(portfolio_value.loc[date]),
                 'buyhold_value': float(btc_buy_hold.loc[date]),
-                'hurst': float(hurst_values_series.loc[date]) if not pd.isna(hurst_values_series.loc[date]) else None,
-                'hurst_ema': float(hurst_ema_series.loc[date]) if not pd.isna(hurst_ema_series.loc[date]) else None,
-                'hurst_signal': hurst_signals.loc[date],
             })
 
         # Position breakdown
@@ -1070,13 +953,7 @@ def run_btc_framework_backtest(hurst_lookback=100, hurst_ema=20, use_hurst_filte
             'Short': position_counts.get('Short', 0) / len(positions) * 100,
         }
 
-        # Current Hurst state
-        current_hurst = float(hurst_values_series.iloc[-1]) if not pd.isna(hurst_values_series.iloc[-1]) else 0.5
-        current_hurst_ema = float(hurst_ema_series.iloc[-1]) if not pd.isna(hurst_ema_series.iloc[-1]) else 0.5
-        hurst_signal_counts = hurst_signals.value_counts()
-        trending_pct = hurst_signal_counts.get('Trending', 0) / len(hurst_signals) * 100
-
-        result = {
+        _btc_framework_cache = {
             'strategy': {
                 'total_return': total_return,
                 'annual_return': annual_return,
@@ -1098,34 +975,22 @@ def run_btc_framework_backtest(hurst_lookback=100, hurst_ema=20, use_hurst_filte
             'position_breakdown': position_pcts,
             'chart_data': chart_data,
             'regime_history': regime_history[-20:],  # Last 20 regime changes
-            'hurst': {
-                'current': current_hurst,
-                'current_ema': current_hurst_ema,
-                'signal': hurst_signals.iloc[-1],
-                'trending_pct': trending_pct,
-            },
             'parameters': {
                 'initial_capital': INITIAL_CAPITAL,
                 'backtest_years': BACKTEST_YEARS,
                 'momentum_days': MOMENTUM_DAYS,
                 'ema_period': EMA_PERIOD,
                 'ema_smoothing': EMA_SMOOTHING,
-                'hurst_lookback': hurst_lookback,
-                'hurst_ema': hurst_ema,
-                'use_hurst_filter': use_hurst_filter,
             },
             'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         }
-        _btc_framework_cache[cache_key] = result
-        _btc_framework_cache_time[cache_key] = datetime.now()
+        _btc_framework_cache_time = datetime.now()
 
         print(f"✓ BTC Framework complete!", flush=True)
         print(f"  Strategy: {total_return:.1f}% return, Sharpe {sharpe:.2f}", flush=True)
         print(f"  Buy&Hold: {bh_total_return:.1f}% return, Sharpe {bh_sharpe:.2f}", flush=True)
-        print(f"  Hurst filter: {'ON' if use_hurst_filter else 'OFF'} (lookback={hurst_lookback}, ema={hurst_ema})", flush=True)
-        print(f"  Current Hurst: {current_hurst:.3f} vs EMA {current_hurst_ema:.3f} = {hurst_signals.iloc[-1]}", flush=True)
 
-        return result
+        return _btc_framework_cache
 
     except Exception as e:
         print(f"Error running BTC framework: {e}", flush=True)
@@ -1136,59 +1001,6 @@ def run_btc_framework_backtest(hurst_lookback=100, hurst_ema=20, use_hurst_filte
             'error': str(e),
             'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         }
-
-
-def run_hurst_comparison_backtest() -> dict:
-    """
-    Run BTC backtests with different Hurst lookback periods for comparison.
-
-    Tests: No filter (baseline), 20-day, 30-day, 50-day, 100-day Hurst lookbacks
-    All use 20-day EMA on Hurst.
-    """
-    print("=" * 60, flush=True)
-    print("RUNNING HURST COMPARISON BACKTESTS", flush=True)
-    print("=" * 60, flush=True)
-
-    results = {}
-
-    # Baseline: No Hurst filter
-    print("\n[1/5] Running baseline (no Hurst filter)...", flush=True)
-    results['baseline'] = run_btc_framework_backtest(use_hurst_filter=False)
-
-    # Different Hurst lookback periods
-    for i, lookback in enumerate([20, 30, 50, 100], start=2):
-        print(f"\n[{i}/5] Running with Hurst lookback={lookback}...", flush=True)
-        results[f'hurst_{lookback}'] = run_btc_framework_backtest(
-            hurst_lookback=lookback,
-            hurst_ema=20,
-            use_hurst_filter=True
-        )
-
-    # Build comparison summary
-    comparison = []
-    for name, data in results.items():
-        if 'error' not in data:
-            comparison.append({
-                'name': name,
-                'label': 'No Filter' if name == 'baseline' else f'Hurst {name.split("_")[1]}d',
-                'total_return': data['strategy']['total_return'],
-                'sharpe': data['strategy']['sharpe'],
-                'max_drawdown': data['strategy']['max_drawdown'],
-                'volatility': data['strategy']['volatility'],
-                'trending_pct': data.get('hurst', {}).get('trending_pct', 100),
-            })
-
-    print("\n" + "=" * 60, flush=True)
-    print("HURST COMPARISON SUMMARY", flush=True)
-    print("=" * 60, flush=True)
-    for c in comparison:
-        print(f"  {c['label']:12} | Return: {c['total_return']:7.1f}% | Sharpe: {c['sharpe']:.2f} | MaxDD: {c['max_drawdown']:.1f}%", flush=True)
-
-    return {
-        'results': results,
-        'comparison': comparison,
-        'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-    }
 
 
 # Cache for multi-asset volatility framework
