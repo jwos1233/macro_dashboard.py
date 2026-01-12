@@ -976,11 +976,18 @@ def run_btc_framework_backtest(hurst_lookback=100, hurst_ema=20, use_hurst_filte
                     base_position = 'Short'
                     base_allocation = -0.25  # -25% (short)
 
-            # Apply Hurst filter if enabled
+            # Apply Hurst filter if enabled - only on NEW entries
+            # Hurst filter should not force exits from existing positions
             if use_hurst_filter and not is_trending:
-                # In choppy conditions, go to neutral regardless of base signal
-                position = 'Neutral'
-                target_allocation = 0.0
+                # Only block new entries (going from Neutral to Overweight/Short)
+                if prev_allocation == 0 and base_allocation != 0:
+                    # Trying to enter a new position in choppy conditions - block it
+                    position = 'Neutral'
+                    target_allocation = 0.0
+                else:
+                    # Already in a position or exiting - let it through
+                    position = base_position
+                    target_allocation = base_allocation
             else:
                 position = base_position
                 target_allocation = base_allocation
