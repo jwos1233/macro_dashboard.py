@@ -734,7 +734,7 @@ def run_btc_framework_backtest() -> dict:
 
     Allocation rules:
     - Q1 in top 2 + above EMA → 200% (Overweight)
-    - Q1 in top 2 but below EMA → 0% (Neutral)
+    - Q1 in top 2 but below EMA → 50% (Neutral)
     - Q1 not in top 2 + above EMA → 0% (Underweight)
     - Q1 not in top 2 + below EMA → -25% (Short)
     """
@@ -854,14 +854,14 @@ def run_btc_framework_backtest() -> dict:
                     target_allocation = 2.0  # 200%
                 else:
                     position = 'Neutral'
-                    target_allocation = 0.0
+                    target_allocation = 0.5  # 50%
             elif top2 == 'Q1':
                 if above_ema:
                     position = 'Overweight'
                     target_allocation = 2.0  # 200%
                 else:
                     position = 'Neutral'
-                    target_allocation = 0.0
+                    target_allocation = 0.5  # 50%
             else:
                 # Q1 not in top 2
                 if above_ema:
@@ -1189,7 +1189,7 @@ def run_volatility_weighted_backtest() -> dict:
                     target_allocation = 2.0
                 else:
                     position = 'Neutral'
-                    target_allocation = 0.0
+                    target_allocation = 0.5  # 50%
             else:
                 if btc_above_ema:
                     position = 'Underweight'
@@ -1569,7 +1569,7 @@ def run_volatility_chase_backtest() -> dict:
                     target_allocation = 2.0
                 else:
                     position = 'Neutral'
-                    target_allocation = 0.0
+                    target_allocation = 0.5  # 50%
             else:
                 if btc_above_ema:
                     position = 'Underweight'
