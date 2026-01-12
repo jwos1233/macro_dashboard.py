@@ -1116,9 +1116,12 @@ def run_volatility_weighted_backtest() -> dict:
         # Apply EMA smoothing
         smoothed_scores = quad_scores.ewm(span=EMA_SMOOTHING, adjust=False).mean()
 
-        # Use BTC for EMA trend filter (as the leading crypto)
+        # Calculate EMA for each asset (for individual trend confirmation)
         btc_close = crypto_df['BTC-USD']
-        btc_ema = btc_close.ewm(span=EMA_PERIOD, adjust=False).mean()
+        asset_emas = {}
+        for ticker in ASSETS:
+            asset_emas[ticker] = crypto_df[ticker].ewm(span=EMA_PERIOD, adjust=False).mean()
+        btc_ema = asset_emas['BTC-USD']  # For backward compatibility
 
         # Align all data
         common_dates = (btc_close.index
@@ -1165,32 +1168,50 @@ def run_volatility_weighted_backtest() -> dict:
 
         for i, date in enumerate(btc_close.index):
             prices = {ticker: crypto_df.loc[date, ticker] for ticker in ASSETS}
-            ema_value = btc_ema.loc[date]
+            ema_values = {ticker: asset_emas[ticker].loc[date] for ticker in ASSETS}
             scores = smoothed_scores.loc[date].sort_values(ascending=False)
-            weights = inv_vol_weights.loc[date]
+            base_weights = inv_vol_weights.loc[date]
 
             top1 = scores.index[0]
             top2 = scores.index[1]
-            above_ema = prices['BTC-USD'] > ema_value
+            btc_above_ema = prices['BTC-USD'] > ema_values['BTC-USD']
 
-            # Determine position (same logic as BTC-only)
+            # Determine position based on BTC (same logic as BTC-only)
             if top1 == 'Q1' or top2 == 'Q1':
-                if above_ema:
+                if btc_above_ema:
                     position = 'Overweight'
                     target_allocation = 2.0
                 else:
                     position = 'Neutral'
                     target_allocation = 0.0
             else:
-                if above_ema:
+                if btc_above_ema:
                     position = 'Underweight'
                     target_allocation = 0.0
                 else:
                     position = 'Short'
-                    target_allocation = -0.5
+                    target_allocation = -1.0
 
             positions.loc[date] = position
             allocations.loc[date] = target_allocation
+
+            # Apply individual EMA confirmations to each asset
+            # For longs: only include assets above their EMA
+            # For shorts: only include assets below their EMA
+            confirmed_assets = []
+            if target_allocation > 0:  # Long position
+                confirmed_assets = [t for t in ASSETS if prices[t] > ema_values[t]]
+            elif target_allocation < 0:  # Short position
+                confirmed_assets = [t for t in ASSETS if prices[t] < ema_values[t]]
+
+            # Calculate adjusted weights (redistribute among confirmed assets only)
+            adjusted_weights = {t: 0.0 for t in ASSETS}
+            if confirmed_assets:
+                total_confirmed_weight = sum(base_weights[t] for t in confirmed_assets)
+                if total_confirmed_weight > 0:
+                    for t in confirmed_assets:
+                        adjusted_weights[t] = base_weights[t] / total_confirmed_weight
+            weights = pd.Series(adjusted_weights)
 
             # Store individual weights and vols
             for ticker in ASSETS:
@@ -1199,13 +1220,13 @@ def run_volatility_weighted_backtest() -> dict:
                 vol_history[ticker].loc[date] = rolling_vol.loc[date, ticker] if date in rolling_vol.index else 0
 
             # Rebalance if allocation or weights changed significantly
-            weights_changed = prev_weights is None or any(abs(weights[t] - prev_weights[t]) > 0.05 for t in ASSETS)
+            weights_changed = prev_weights is None or any(abs(weights[t] - prev_weights.get(t, 0)) > 0.05 for t in ASSETS)
 
             if target_allocation != prev_allocation or (target_allocation != 0 and weights_changed):
                 # Calculate current portfolio value
                 current_value = cash + sum(holdings[t] * prices[t] for t in ASSETS)
 
-                # Calculate target holdings for each asset
+                # Calculate target holdings for each asset (only confirmed assets get allocation)
                 for ticker in ASSETS:
                     target_asset_value = current_value * target_allocation * weights[ticker]
                     holdings[ticker] = target_asset_value / prices[ticker]
@@ -1217,11 +1238,12 @@ def run_volatility_weighted_backtest() -> dict:
                     'position': position,
                     'allocation': target_allocation,
                     'weights': {ASSET_NAMES[t]: round(weights[t] * 100, 1) for t in ASSETS},
+                    'confirmed': [ASSET_NAMES[t] for t in confirmed_assets],
                     'btc_price': prices['BTC-USD']
                 })
 
                 prev_allocation = target_allocation
-                prev_weights = weights.copy()
+                prev_weights = weights.to_dict()
 
             # Calculate portfolio value
             portfolio_value.loc[date] = cash + sum(holdings[t] * prices[t] for t in ASSETS)
@@ -1468,9 +1490,12 @@ def run_volatility_chase_backtest() -> dict:
         # Apply EMA smoothing
         smoothed_scores = quad_scores.ewm(span=EMA_SMOOTHING, adjust=False).mean()
 
-        # Use BTC for EMA trend filter
+        # Calculate EMA for each asset (for individual trend confirmation)
         btc_close = crypto_df['BTC-USD']
-        btc_ema = btc_close.ewm(span=EMA_PERIOD, adjust=False).mean()
+        asset_emas = {}
+        for ticker in ASSETS:
+            asset_emas[ticker] = crypto_df[ticker].ewm(span=EMA_PERIOD, adjust=False).mean()
+        btc_ema = asset_emas['BTC-USD']  # For backward compatibility
 
         # Align all data
         common_dates = (btc_close.index
@@ -1517,32 +1542,50 @@ def run_volatility_chase_backtest() -> dict:
 
         for i, date in enumerate(btc_close.index):
             prices = {ticker: crypto_df.loc[date, ticker] for ticker in ASSETS}
-            ema_value = btc_ema.loc[date]
+            ema_values = {ticker: asset_emas[ticker].loc[date] for ticker in ASSETS}
             scores = smoothed_scores.loc[date].sort_values(ascending=False)
-            weights = vol_weights.loc[date]
+            base_weights = vol_weights.loc[date]
 
             top1 = scores.index[0]
             top2 = scores.index[1]
-            above_ema = prices['BTC-USD'] > ema_value
+            btc_above_ema = prices['BTC-USD'] > ema_values['BTC-USD']
 
-            # Determine position (same logic as BTC-only)
+            # Determine position based on BTC (same logic as BTC-only)
             if top1 == 'Q1' or top2 == 'Q1':
-                if above_ema:
+                if btc_above_ema:
                     position = 'Overweight'
                     target_allocation = 2.0
                 else:
                     position = 'Neutral'
                     target_allocation = 0.0
             else:
-                if above_ema:
+                if btc_above_ema:
                     position = 'Underweight'
                     target_allocation = 0.0
                 else:
                     position = 'Short'
-                    target_allocation = -0.5
+                    target_allocation = -1.0
 
             positions.loc[date] = position
             allocations.loc[date] = target_allocation
+
+            # Apply individual EMA confirmations to each asset
+            # For longs: only include assets above their EMA
+            # For shorts: only include assets below their EMA
+            confirmed_assets = []
+            if target_allocation > 0:  # Long position
+                confirmed_assets = [t for t in ASSETS if prices[t] > ema_values[t]]
+            elif target_allocation < 0:  # Short position
+                confirmed_assets = [t for t in ASSETS if prices[t] < ema_values[t]]
+
+            # Calculate adjusted weights (redistribute among confirmed assets only)
+            adjusted_weights = {t: 0.0 for t in ASSETS}
+            if confirmed_assets:
+                total_confirmed_weight = sum(base_weights[t] for t in confirmed_assets)
+                if total_confirmed_weight > 0:
+                    for t in confirmed_assets:
+                        adjusted_weights[t] = base_weights[t] / total_confirmed_weight
+            weights = pd.Series(adjusted_weights)
 
             # Store individual weights and vols
             for ticker in ASSETS:
@@ -1551,13 +1594,13 @@ def run_volatility_chase_backtest() -> dict:
                 vol_history[ticker].loc[date] = rolling_vol.loc[date, ticker] if date in rolling_vol.index else 0
 
             # Rebalance if allocation or weights changed significantly
-            weights_changed = prev_weights is None or any(abs(weights[t] - prev_weights[t]) > 0.05 for t in ASSETS)
+            weights_changed = prev_weights is None or any(abs(weights[t] - prev_weights.get(t, 0)) > 0.05 for t in ASSETS)
 
             if target_allocation != prev_allocation or (target_allocation != 0 and weights_changed):
                 # Calculate current portfolio value
                 current_value = cash + sum(holdings[t] * prices[t] for t in ASSETS)
 
-                # Calculate target holdings for each asset
+                # Calculate target holdings for each asset (only confirmed assets get allocation)
                 for ticker in ASSETS:
                     target_asset_value = current_value * target_allocation * weights[ticker]
                     holdings[ticker] = target_asset_value / prices[ticker]
@@ -1569,11 +1612,12 @@ def run_volatility_chase_backtest() -> dict:
                     'position': position,
                     'allocation': target_allocation,
                     'weights': {ASSET_NAMES[t]: round(weights[t] * 100, 1) for t in ASSETS},
+                    'confirmed': [ASSET_NAMES[t] for t in confirmed_assets],
                     'btc_price': prices['BTC-USD']
                 })
 
                 prev_allocation = target_allocation
-                prev_weights = weights.copy()
+                prev_weights = weights.to_dict()
 
             # Calculate portfolio value
             portfolio_value.loc[date] = cash + sum(holdings[t] * prices[t] for t in ASSETS)
