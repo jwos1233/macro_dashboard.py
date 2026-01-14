@@ -726,6 +726,46 @@ def run_ema_window_comparison() -> dict:
 # Cache for BTC digital assets framework
 _btc_framework_cache = None
 _btc_framework_cache_time = None
+BTC_FRAMEWORK_CACHE_FILE = DATA_DIR / "btc_framework_cache.json"
+
+
+def load_btc_framework_from_disk() -> Optional[dict]:
+    """Load BTC framework results from disk cache"""
+    global _btc_framework_cache, _btc_framework_cache_time
+
+    if not BTC_FRAMEWORK_CACHE_FILE.exists():
+        return None
+
+    try:
+        with open(BTC_FRAMEWORK_CACHE_FILE, 'r') as f:
+            data = json.load(f)
+
+        # Check if cache is still fresh
+        cached_at = datetime.fromisoformat(data.get('_cached_at', '2000-01-01'))
+        if (datetime.now() - cached_at) > timedelta(hours=CACHE_DURATION_HOURS):
+            print("BTC framework disk cache expired", flush=True)
+            return None
+
+        _btc_framework_cache = data
+        _btc_framework_cache_time = cached_at
+        print(f"Loaded BTC framework from disk cache", flush=True)
+        return data
+    except Exception as e:
+        print(f"Error loading BTC framework cache: {e}", flush=True)
+        return None
+
+
+def save_btc_framework_to_disk(data: dict) -> bool:
+    """Save BTC framework results to disk"""
+    try:
+        data['_cached_at'] = datetime.now().isoformat()
+        with open(BTC_FRAMEWORK_CACHE_FILE, 'w') as f:
+            json.dump(data, f)
+        print("BTC framework saved to disk cache", flush=True)
+        return True
+    except Exception as e:
+        print(f"Error saving BTC framework cache: {e}", flush=True)
+        return False
 
 
 def run_btc_framework_backtest() -> dict:
@@ -740,11 +780,16 @@ def run_btc_framework_backtest() -> dict:
     """
     global _btc_framework_cache, _btc_framework_cache_time
 
-    # Check cache
+    # Check memory cache first
     if _btc_framework_cache is not None and _btc_framework_cache_time is not None:
         cache_age = datetime.now() - _btc_framework_cache_time
         if cache_age < timedelta(hours=CACHE_DURATION_HOURS):
             return _btc_framework_cache
+
+    # Try loading from disk cache
+    disk_cache = load_btc_framework_from_disk()
+    if disk_cache is not None:
+        return disk_cache
 
     try:
         print("=" * 60, flush=True)
@@ -978,6 +1023,9 @@ def run_btc_framework_backtest() -> dict:
             'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         }
         _btc_framework_cache_time = datetime.now()
+
+        # Save to disk for faster loads
+        save_btc_framework_to_disk(_btc_framework_cache)
 
         print(f"✓ BTC Framework complete!", flush=True)
         print(f"  Strategy: {total_return:.1f}% return, Sharpe {sharpe:.2f}", flush=True)
