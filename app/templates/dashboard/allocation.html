@@ -171,7 +171,6 @@
                         <th class="px-4 py-3">Asset</th>
                         <th class="px-4 py-3">Category</th>
                         <th class="px-4 py-3">Weight</th>
-                        <th class="px-4 py-3">Notional ($10k)</th>
                         <th class="px-4 py-3">Quadrant</th>
                     </tr>
                 </thead>
@@ -205,9 +204,6 @@
                                 <span class="font-medium text-gray-900 dark:text-white">{{ (pos.weight * 100)|round(2) }}%</span>
                             </div>
                         </td>
-                        <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
-                            ${{ "{:,.0f}".format(pos.notional_10k) }}
-                        </td>
                         <td class="px-4 py-3">
                             {% for quad in pos.quadrants %}
                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mr-1
@@ -226,7 +222,6 @@
                     <tr class="font-semibold">
                         <td class="px-4 py-3" colspan="3">Total</td>
                         <td class="px-4 py-3">{{ (signals.total_leverage * 100)|round(1) }}%</td>
-                        <td class="px-4 py-3">${{ "{:,.0f}".format(signals.total_leverage * 10000) }}</td>
                         <td class="px-4 py-3"></td>
                     </tr>
                 </tfoot>
