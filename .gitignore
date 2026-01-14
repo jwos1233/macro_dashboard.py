@@ -32,3 +32,4 @@ Thumbs.db
 
 # Data files (generated at runtime, persist across deploys)
 app/data/daily_notes.json
+app/data/btc_framework_cache.json

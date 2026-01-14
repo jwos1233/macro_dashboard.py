@@ -503,6 +503,51 @@ def run_live_backtest() -> Optional[dict]:
         return None
 
 
+BACKTEST_CACHE_FILE = DATA_DIR / "backtest_results.json"
+
+
+def save_backtest_to_disk(data: dict) -> bool:
+    """Save backtest results to disk for faster subsequent loads"""
+    try:
+        data['_cached_at'] = datetime.now().isoformat()
+        with open(BACKTEST_CACHE_FILE, 'w') as f:
+            json.dump(data, f)
+        print("Backtest results saved to disk cache", flush=True)
+        return True
+    except Exception as e:
+        print(f"Error saving backtest cache: {e}", flush=True)
+        return False
+
+
+def load_backtest_from_disk() -> Optional[dict]:
+    """Load backtest results from disk cache if fresh"""
+    global _backtest_cache, _backtest_cache_time
+
+    if not BACKTEST_CACHE_FILE.exists():
+        return None
+
+    try:
+        with open(BACKTEST_CACHE_FILE, 'r') as f:
+            data = json.load(f)
+
+        # Check if cache is still fresh
+        cached_at_str = data.get('_cached_at')
+        if cached_at_str:
+            cached_at = datetime.fromisoformat(cached_at_str)
+            if (datetime.now() - cached_at) < timedelta(hours=CACHE_DURATION_HOURS):
+                data['data_source'] = 'disk_cache'
+                _backtest_cache = data
+                _backtest_cache_time = cached_at
+                print(f"Loaded backtest from disk cache", flush=True)
+                return data
+            else:
+                print("Backtest disk cache expired", flush=True)
+        return None
+    except Exception as e:
+        print(f"Error loading backtest cache: {e}", flush=True)
+        return None
+
+
 def load_backtest_results() -> dict:
     """
     Load backtest results - runs live backtest if possible,
@@ -510,25 +555,31 @@ def load_backtest_results() -> dict:
     """
     global _backtest_cache, _backtest_cache_time
 
-    # Check if cache is still valid
+    # Check if memory cache is still valid
     if _backtest_cache is not None and _backtest_cache_time is not None:
         cache_age = datetime.now() - _backtest_cache_time
         if cache_age < timedelta(hours=CACHE_DURATION_HOURS):
             return _backtest_cache
+
+    # Try loading from disk cache first (fast)
+    disk_cache = load_backtest_from_disk()
+    if disk_cache is not None:
+        return disk_cache
 
     # Try to run live backtest
     live_results = run_live_backtest()
     if live_results is not None:
         _backtest_cache = live_results
         _backtest_cache_time = datetime.now()
+        # Save to disk for faster subsequent loads
+        save_backtest_to_disk(live_results)
         print(f"Live backtest complete. Total return: {live_results['summary']['total_return']:.1f}%")
         return _backtest_cache
 
-    # Fall back to JSON file
-    json_path = DATA_DIR / "backtest_results.json"
-    if json_path.exists():
+    # Fall back to JSON file (legacy/manual)
+    if BACKTEST_CACHE_FILE.exists():
         try:
-            with open(json_path, 'r') as f:
+            with open(BACKTEST_CACHE_FILE, 'r') as f:
                 _backtest_cache = json.load(f)
                 _backtest_cache['data_source'] = 'json_file'
                 _backtest_cache_time = datetime.now()
@@ -726,6 +777,46 @@ def run_ema_window_comparison() -> dict:
 # Cache for BTC digital assets framework
 _btc_framework_cache = None
 _btc_framework_cache_time = None
+BTC_FRAMEWORK_CACHE_FILE = DATA_DIR / "btc_framework_cache.json"
+
+
+def load_btc_framework_from_disk() -> Optional[dict]:
+    """Load BTC framework results from disk cache"""
+    global _btc_framework_cache, _btc_framework_cache_time
+
+    if not BTC_FRAMEWORK_CACHE_FILE.exists():
+        return None
+
+    try:
+        with open(BTC_FRAMEWORK_CACHE_FILE, 'r') as f:
+            data = json.load(f)
+
+        # Check if cache is still fresh
+        cached_at = datetime.fromisoformat(data.get('_cached_at', '2000-01-01'))
+        if (datetime.now() - cached_at) > timedelta(hours=CACHE_DURATION_HOURS):
+            print("BTC framework disk cache expired", flush=True)
+            return None
+
+        _btc_framework_cache = data
+        _btc_framework_cache_time = cached_at
+        print(f"Loaded BTC framework from disk cache", flush=True)
+        return data
+    except Exception as e:
+        print(f"Error loading BTC framework cache: {e}", flush=True)
+        return None
+
+
+def save_btc_framework_to_disk(data: dict) -> bool:
+    """Save BTC framework results to disk"""
+    try:
+        data['_cached_at'] = datetime.now().isoformat()
+        with open(BTC_FRAMEWORK_CACHE_FILE, 'w') as f:
+            json.dump(data, f)
+        print("BTC framework saved to disk cache", flush=True)
+        return True
+    except Exception as e:
+        print(f"Error saving BTC framework cache: {e}", flush=True)
+        return False
 
 
 def run_btc_framework_backtest() -> dict:
@@ -739,11 +830,16 @@ def run_btc_framework_backtest() -> dict:
     """
     global _btc_framework_cache, _btc_framework_cache_time
 
-    # Check cache
+    # Check memory cache first
     if _btc_framework_cache is not None and _btc_framework_cache_time is not None:
         cache_age = datetime.now() - _btc_framework_cache_time
         if cache_age < timedelta(hours=CACHE_DURATION_HOURS):
             return _btc_framework_cache
+
+    # Try loading from disk cache
+    disk_cache = load_btc_framework_from_disk()
+    if disk_cache is not None:
+        return disk_cache
 
     try:
         print("=" * 60, flush=True)
@@ -977,6 +1073,9 @@ def run_btc_framework_backtest() -> dict:
             'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         }
         _btc_framework_cache_time = datetime.now()
+
+        # Save to disk for faster loads
+        save_btc_framework_to_disk(_btc_framework_cache)
 
         print(f"✓ BTC Framework complete!", flush=True)
         print(f"  Strategy: {total_return:.1f}% return, Sharpe {sharpe:.2f}", flush=True)
