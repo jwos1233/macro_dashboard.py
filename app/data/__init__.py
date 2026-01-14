@@ -503,6 +503,51 @@ def run_live_backtest() -> Optional[dict]:
         return None
 
 
+BACKTEST_CACHE_FILE = DATA_DIR / "backtest_results.json"
+
+
+def save_backtest_to_disk(data: dict) -> bool:
+    """Save backtest results to disk for faster subsequent loads"""
+    try:
+        data['_cached_at'] = datetime.now().isoformat()
+        with open(BACKTEST_CACHE_FILE, 'w') as f:
+            json.dump(data, f)
+        print("Backtest results saved to disk cache", flush=True)
+        return True
+    except Exception as e:
+        print(f"Error saving backtest cache: {e}", flush=True)
+        return False
+
+
+def load_backtest_from_disk() -> Optional[dict]:
+    """Load backtest results from disk cache if fresh"""
+    global _backtest_cache, _backtest_cache_time
+
+    if not BACKTEST_CACHE_FILE.exists():
+        return None
+
+    try:
+        with open(BACKTEST_CACHE_FILE, 'r') as f:
+            data = json.load(f)
+
+        # Check if cache is still fresh
+        cached_at_str = data.get('_cached_at')
+        if cached_at_str:
+            cached_at = datetime.fromisoformat(cached_at_str)
+            if (datetime.now() - cached_at) < timedelta(hours=CACHE_DURATION_HOURS):
+                data['data_source'] = 'disk_cache'
+                _backtest_cache = data
+                _backtest_cache_time = cached_at
+                print(f"Loaded backtest from disk cache", flush=True)
+                return data
+            else:
+                print("Backtest disk cache expired", flush=True)
+        return None
+    except Exception as e:
+        print(f"Error loading backtest cache: {e}", flush=True)
+        return None
+
+
 def load_backtest_results() -> dict:
     """
     Load backtest results - runs live backtest if possible,
@@ -510,25 +555,31 @@ def load_backtest_results() -> dict:
     """
     global _backtest_cache, _backtest_cache_time
 
-    # Check if cache is still valid
+    # Check if memory cache is still valid
     if _backtest_cache is not None and _backtest_cache_time is not None:
         cache_age = datetime.now() - _backtest_cache_time
         if cache_age < timedelta(hours=CACHE_DURATION_HOURS):
             return _backtest_cache
+
+    # Try loading from disk cache first (fast)
+    disk_cache = load_backtest_from_disk()
+    if disk_cache is not None:
+        return disk_cache
 
     # Try to run live backtest
     live_results = run_live_backtest()
     if live_results is not None:
         _backtest_cache = live_results
         _backtest_cache_time = datetime.now()
+        # Save to disk for faster subsequent loads
+        save_backtest_to_disk(live_results)
         print(f"Live backtest complete. Total return: {live_results['summary']['total_return']:.1f}%")
         return _backtest_cache
 
-    # Fall back to JSON file
-    json_path = DATA_DIR / "backtest_results.json"
-    if json_path.exists():
+    # Fall back to JSON file (legacy/manual)
+    if BACKTEST_CACHE_FILE.exists():
         try:
-            with open(json_path, 'r') as f:
+            with open(BACKTEST_CACHE_FILE, 'r') as f:
                 _backtest_cache = json.load(f)
                 _backtest_cache['data_source'] = 'json_file'
                 _backtest_cache_time = datetime.now()
